@@ -100,10 +100,9 @@ namespace sponge
 		{
 			if(x==t)return flow;
 			Flow res=0;
-			for(int i=cur[x];i&&flow;i=next[i])
+			for(int& i=cur[x];i&&flow;i=next[i])
 			{
 				int y=son[i];
-				cur[x]=i;
 				if(cap[i]>0&&dis[y]==dis[x]+1)
 				{
 					Flow k=dfs(y,min(flow,cap[i]));
@@ -135,7 +134,7 @@ namespace sponge
 		int v=0,e=1,s=0,t=0;
 		Flow maxflow=0;
 		Cost mincost=0;
-		vector<int> head={0},cur={0},pre_v={0},pre_e={0};
+		vector<int> head={0},pre_v={0},pre_e={0};
 		vector<char> vis={0};
 		vector<Cost> dis={0},h={0};
 		vector<int> son={0,0},next={0,0};
@@ -155,7 +154,6 @@ namespace sponge
 		{
 			v=n++;
 			head.resize(n);
-			cur.resize(n);
 			pre_v.resize(n);
 			pre_e.resize(n);
 			vis.resize(n);
@@ -166,7 +164,6 @@ namespace sponge
 		{
 			++n;
 			head.reserve(n);
-			cur.reserve(n);
 			pre_v.reserve(n);
 			pre_e.reserve(n);
 			vis.reserve(n);
@@ -188,7 +185,6 @@ namespace sponge
 		int alloc()
 		{
 			head.push_back(0);
-			cur.push_back(0);
 			pre_v.push_back(0);
 			pre_e.push_back(0);
 			vis.push_back(0);
