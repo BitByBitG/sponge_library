@@ -92,19 +92,7 @@ It is intended for convenient local testing during competitive programming.
 `expander` expands `#include <sponge/...>` directives recursively and produces a standalone source file suitable for submission to online judges.
 
 ```bash
-expander main.cpp --lib "path/to/sponge_library" expand
-```
-
-If the library is located at:
-
-```text
-C:\code\sponge_library
-```
-
-for example:
-
-```bash
-expander main.cpp --lib "C:\code\sponge_library" expand
+expander main.cpp
 ```
 
 Use
