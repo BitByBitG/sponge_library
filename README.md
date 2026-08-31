@@ -12,11 +12,19 @@ A personal C++ library for competitive programming.
 
 ```text
 sponge_library/
+├── build.bat
+├── README.md
+├── LICENSE
 ├── include/
-│   └── sponge/       # Library headers
-├── src/              # Source code of helper tools
-├── bin/              # Prebuilt helper tools
-└── LICENSE
+│   └── sponge/
+├── src/
+│   ├── compile.cpp
+│   ├── run.cpp
+│   └── expander.cpp
+└── bin/
+    ├── compile.exe
+    ├── run.exe
+    └── expander.exe
 ```
 
 The library contains implementations of commonly used algorithms and data structures, including graph algorithms, flows, segment trees, trees, modular arithmetic, matrices, polynomials, strings, and more.
@@ -52,6 +60,18 @@ using namespace sponge;
 Prebuilt Windows executables are available in `bin/`.
 
 It is recommended to add `sponge_library/bin` to `PATH` so that the tools can be used directly from anywhere.
+
+### Building Tools
+
+The helper tools can be built from source using `build.bat`:
+
+```bat
+build.bat
+```
+
+This compiles `compile`, `run`, and `expander` from the sources in `src/` and places the resulting executables in `bin/`.
+
+A GCC toolchain with `g++` available in `PATH` is required.
 
 ### compile
 
