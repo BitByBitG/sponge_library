@@ -46,8 +46,6 @@ int main(int argc,char* argv[])
 			<<"Process exited after "<<run_time
 			<<" seconds with return value "<<ret_val<<".\n";
 
-	cerr<<"Press any key to continue . . .";
-	_getch();
-	cerr<<'\n';
+	system("pause");
 	return ret_val==-1?1:0;
 }
