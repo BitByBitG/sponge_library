@@ -34,6 +34,10 @@ namespace sponge
 			using other=static_allocator<U>;
 		};
 		static_allocator()=default;
+		~static_allocator()
+		{
+			delete[] mempool;
+		}
 		template<typename U>
 		static_allocator(const static_allocator<U>&){}
 		pointer allocate(size_type)
@@ -79,7 +83,7 @@ namespace sponge
 				stk.pop_back();
 				return pointer(x);
 			}
-			if(++top>=cap)throw runtime_error("Bad alloc.");
+			if(++top>=cap)throw runtime_error("bad alloc");
 			return pointer(top);
 		}
 		static void free1(pointer p)

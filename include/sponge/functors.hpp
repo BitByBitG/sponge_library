@@ -9,9 +9,15 @@ namespace sponge
 		constexpr T operator()()const{return val;}
 	};
 	template<typename T>
-	using zero_fn=val_fn<T,(T)(0)>;
+	struct zero_fn
+	{
+		constexpr T operator()()const{return (T)(0);}
+	};
 	template<typename T>
-	using one_fn=val_fn<T,(T)(1)>;
+	struct one_fn
+	{
+		constexpr T operator()()const{return (T)(1);}
+	};
 	template<typename T>
 	struct max_fn
 	{
@@ -22,7 +28,12 @@ namespace sponge
 	{
 		constexpr T operator()(const T& x,const T& y)const{return min<T>(x,y);}
 	};
-	using null_id=val_fn<null_t,null_t{}>;
+	template<typename T>
+	struct default_id
+	{
+		constexpr T operator()()const{return T();}
+	};
+	using null_id=default_id<null_t>;
 	struct is_null_id
 	{
 		constexpr bool operator()(null_t)const{ return true; }

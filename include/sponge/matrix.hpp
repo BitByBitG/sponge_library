@@ -81,6 +81,30 @@ namespace sponge
 			*this=(*this)*b;
 			return *this;
 		}
+		static_matrix operator*=(T x)
+		{
+			for(int i=0;i<n;i++)
+				for(int j=0;j<m;j++)
+					data[i][j]*=x;
+			return *this;
+		}
+		friend static_matrix operator*(static_matrix x,T y)
+		{
+			x*=y;
+			return x;
+		}
+		static static_matrix id()
+		{
+			static_matrix a;
+			for(int i=0;i<n;i++)a(i,i)=one();
+			return a;
+		}
+		static_matrix pow(int x)
+		{
+			static_matrix base=*this,prod=id();
+			for(;x;x>>=1,base*=base)if(x&1)prod*=base;
+			return prod;
+		}
 	};
 	template<typename T,int n,int m>
 	using s_max_plus_matrix=static_matrix<
