@@ -58,7 +58,7 @@ namespace sponge
 				tag[x]=t_id();
 			}
 		}
-		void set_pos(int p,Scr s)
+		void set(int p,Scr s)
 		{
 			p--;
 			p+=sz;
@@ -66,7 +66,7 @@ namespace sponge
 			val[p]=s;
 			for(int i=1;i<=lg;i++)push_up(p>>i);
 		}
-		S get_pos(int p)
+		S query(int p)
 		{
 			p--;
 			p+=sz;
@@ -95,7 +95,7 @@ namespace sponge
 			}
 			return s_op_s_s(vl,vr);
 		}
-		S query_all()
+		S query()
 		{
 			return val[1];
 		}
