@@ -5,130 +5,32 @@
 #include<sponge/functors.hpp>
 namespace sponge
 {
-	template<typename S,typename SId,typename SOpSS>
-	class segtree:
-		public monoid<S,SId,SOpSS>
-	{
-	public:
-		using M=monoid<S,SId,SOpSS>;
-		using M::s_id,M::s_op_s_s;
-		int n;
-		vector<S> val;
-		segtree():n(0){}
-		segtree(int n)
-		{
-			resize(n);
-			build([](int){return s_id();});
-		}
-		template<typename F>
-		segtree(int n,F&& f)
-		{
-			resize(n);
-			build(f);
-		}
-		template<typename RAIte>
-		segtree(RAIte first,RAIte last)
-		{
-			int n=last-first;
-			resize(n);
-			build([&](int x){return *(first+x-1);});
-		}
-		INLINE int ls(int x)const
-		{
-			return x<<1;
-		}
-		INLINE int rs(int x)const
-		{
-			return x<<1|1;
-		}
-		void push_up(const int &x)
-		{
-			val[x]=s_op_s_s(val[ls(x)],val[rs(x)]);
-		}
-		template<typename F>
-		void build(F&& f)
-		{
-			auto dfs=[&](auto&& dfs,int x,int l,int r)
-			{
-				if(l==r)return val[x]=f(l),[]{}();
-				int mid=(l+r)>>1;
-				dfs(dfs,ls(x),l,mid);
-				dfs(dfs,rs(x),mid+1,r);
-				push_up(x);
-			};
-			dfs(dfs,1,1,n);
-		}
-		void update(int _x,const S& v)
-		{
-			auto dfs=[&](auto&& dfs,int x,int l,int r)
-			{
-				if(l==r)return val[x]=v,[]{}();
-				int mid=(l+r)>>1;
-				if(_x<=mid)dfs(dfs,ls(x),l,mid);
-				else dfs(dfs,rs(x),mid+1,r);
-				push_up(x);
-			};
-			dfs(dfs,1,1,n);
-		}
-		S query(int _l,int _r)const
-		{
-			if(_l>_r)return s_id();
-			auto dfs=[&](auto&& dfs,int x,int l,int r)
-			{
-				if(_l<=l&&r<=_r)return val[x];
-				int mid=(l+r)>>1;
-				if(_l<=mid&&mid<_r)return s_op_s_s(dfs(dfs,ls(x),l,mid),dfs(dfs,rs(x),mid+1,r));
-				else if(_l<=mid)return dfs(dfs,ls(x),l,mid);
-				else return dfs(dfs,rs(x),mid+1,r);
-			};
-			return dfs(dfs,1,1,n);
-		}
-		int size()const
-		{
-			return n;
-		}
-		void resize(int _n)
-		{
-			n=_n;
-			val.assign((n<<2)+1,s_id());
-		}
-		void clear()
-		{
-			n=0;
-			val.clear();
-		}
-	};
 	template<
 		typename S,typename T,typename SId,typename TId,typename IsTId,
 		typename SOpSS,typename SOpST,typename TOpTT
 	>
-	class lazy_segtree:
+	class segtree:
 		public double_monoid<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT>
 	{
 	public:
 		using M=double_monoid<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT>;
 		using M::s_id,M::t_id,M::is_t_id,M::s_op_s_s,M::s_op_s_t,M::t_op_t_t;
-		int n;
+		using Scr=M::Scr;
+		using Tcr=M::Tcr;
+		int n,sz,lg;
 		vector<S> val;
 		vector<T> tag;
-		lazy_segtree():n(0){}
-		lazy_segtree(int n)
-		{
-			resize(n);
-			build([](int){return s_id();});
-		}
+		segtree():segtree(0){}
+		segtree(int _n):segtree(_n,[](int){return s_id();}){}
 		template<typename F>
-		lazy_segtree(int n,F&& f)
+		segtree(int _n,F&& f):n(_n)
 		{
-			resize(n);
-			build(f);
-		}
-		template<typename RAIte>
-		lazy_segtree(RAIte first,RAIte last)
-		{
-			int n=last-first;
-			resize(n);
-			build([&](int x){return *(first+x-1);});
+			sz=bit_ceil<uint32_t>(n);
+			lg=countr_zero<uint32_t>(sz);
+			val.assign(sz<<1,s_id());
+			tag.assign(sz,t_id());
+			for(int i=0;i<n;i++)val[sz+i]=f(i+1);
+			for(int i=sz-1;i>=1;i--)push_up(i);
 		}
 		INLINE int ls(int x)const
 		{
@@ -138,83 +40,185 @@ namespace sponge
 		{
 			return x<<1|1;
 		}
-		void push_up(const int &x)
+		void push_up(int x)
 		{
 			val[x]=s_op_s_s(val[ls(x)],val[rs(x)]);
 		}
-		void apply_tag(int x,int l,int r,const T& t)
+		void apply_tag(int x,Tcr t,int len)
 		{
-			val[x]=s_op_s_t(val[x],t,r-l+1);
-			tag[x]=t_op_t_t(tag[x],t);
+			val[x]=s_op_s_t(val[x],t,len);
+			if(x<sz)tag[x]=t_op_t_t(tag[x],t);
 		}
-		void push_down(int x,int l,int r)
+		void push_down(int x,int len)
 		{
 			if(!is_t_id(tag[x]))
 			{
-				int mid=(l+r)>>1;
-				apply_tag(ls(x),l,mid,tag[x]);
-				apply_tag(rs(x),mid+1,r,tag[x]);
+				apply_tag(ls(x),tag[x],len);
+				apply_tag(rs(x),tag[x],len);
 				tag[x]=t_id();
 			}
 		}
+		void set_pos(int p,Scr s)
+		{
+			p--;
+			p+=sz;
+			for(int i=lg;i>=1;i--)push_down(p>>i,1<<i);
+			val[p]=s;
+			for(int i=1;i<=lg;i++)push_up(p>>i);
+		}
+		S get_pos(int p)
+		{
+			p--;
+			p+=sz;
+			for(int i=lg;i>=1;i--)push_down(p>>i,1<<i);
+			return val[p];
+		}
+		S query(int l,int r)
+		{
+			l--;
+			if(l==r)return s_id();
+			l+=sz;
+			r+=sz;
+			for(int i=lg;i>=1;i--)
+			{
+				int len=1<<i;
+				if(((l>>i)<<i)!=l)push_down(l>>i,len);
+				if(((r>>i)<<i)!=r)push_down((r-1)>>i,len);
+			}
+			S vl=s_id(),vr=s_id();
+			while(l<r)
+			{
+				if(l&1)vl=s_op_s_s(vl,val[l++]);
+				if(r&1)vr=s_op_s_s(val[--r],vr);
+				l>>=1;
+				r>>=1;
+			}
+			return s_op_s_s(vl,vr);
+		}
+		S query_all()
+		{
+			return val[1];
+		}
+		void update(int p,Tcr t)
+		{
+			if(is_t_id(t))return;
+			p--;
+			p+=sz;
+			for(int i=lg;i>=1;i--)push_down(p>>i,1<<i);
+			val[p]=s_op_s_t(val[p],t,1);
+			for(int i=1;i<=lg;i++)push_up(p>>i);
+		}
+		void update(int l,int r,Tcr t)
+		{
+			if(is_t_id(t))return;
+			l--;
+			if(l==r)return;
+			l+=sz;
+			r+=sz;
+			for(int i=lg;i>=1;i--)
+			{
+				int len=1<<i;
+				if(((l>>i)<<i)!=l)push_down(l>>i,len);
+				if(((r>>i)<<i)!=r)push_down((r-1)>>i,len);
+			}
+			int l2=l,r2=r;
+			int len=1;
+			while(l<r)
+			{
+				if(l&1)apply_tag(l++,t,len);
+				if(r&1)apply_tag(--r,t,len);
+				l>>=1;
+				r>>=1;
+				len<<=1;
+			}
+			l=l2;
+			r=r2;
+			for(int i=1;i<=lg;i++)
+			{
+				if(((l>>i)<<i)!=l)push_up(l>>i);
+				if(((r>>i)<<i)!=r)push_up((r-1)>>i);
+			}
+		}
+		template<bool (*f)(S)>
+		int max_right(int l)
+		{
+			return max_right(l,[](S x){return f(x);});
+		}
 		template<typename F>
-		void build(F&& f)
+		int max_right(int l,F&& f)
 		{
-			auto dfs=[&](auto&& dfs,int x,int l,int r)
+			l--;
+			if(l==n)return n;
+			l+=sz;
+			for(int i=lg;i>=1;i--)push_down(l>>i,1<<i);
+			S v=s_id();
+			do
 			{
-				tag[x]=t_id();
-				if(l==r)return val[x]=f(l),[]{}();
-				int mid=(l+r)>>1;
-				dfs(dfs,ls(x),l,mid);
-				dfs(dfs,rs(x),mid+1,r);
-				push_up(x);
-			};
-			dfs(dfs,1,1,n);
-		}
-		void update(int _l,int _r,const T& t)
-		{
-			if(_l>_r)return;
-			auto dfs=[&](auto&& dfs,int x,int l,int r)
-			{
-				if(_l<=l&&r<=_r)return apply_tag(x,l,r,t);
-				push_down(x,l,r);
-				int mid=(l+r)>>1;
-				if(_l<=mid)dfs(dfs,ls(x),l,mid);
-				if(mid<_r)dfs(dfs,rs(x),mid+1,r);
-				push_up(x);
-			};
-			dfs(dfs,1,1,n);
-		}
-		S query(int _l,int _r)
-		{
-			if(_l>_r)return s_id();
-			auto dfs=[&](auto&& dfs,int x,int l,int r)
-			{
-				if(_l<=l&&r<=_r)return val[x];
-				push_down(x,l,r);
-				int mid=(l+r)>>1;
-				if(_l<=mid&&mid<_r)return s_op_s_s(dfs(dfs,ls(x),l,mid),dfs(dfs,rs(x),mid+1,r));
-				else if(_l<=mid)return dfs(dfs,ls(x),l,mid);
-				else return dfs(dfs,rs(x),mid+1,r);
-			};
-			return dfs(dfs,1,1,n);
-		}
-		int size()const
-		{
+				while(!(l&1))l>>=1;
+				if(!f(s_op_s_s(v,val[l])))
+				{
+					int len=sz>>(bit_width<uint32_t>(l)-1);
+					while(l<sz)
+					{
+						push_down(l,len);
+						l<<=1;
+						len>>=1;
+						S tmp=s_op_s_s(v,val[l]);
+						if(f(tmp))
+						{
+							v=tmp;
+							l++;
+						}
+					}
+					return l-sz;
+				}
+				v=s_op_s_s(v,val[l]);
+				l++;
+			}while((l&-l)!=l);
 			return n;
 		}
-		void resize(int _n)
+		template<bool (*f)(S)>
+		int min_left(int r)
 		{
-			n=_n;
-			val.assign((n<<2)+1,s_id());
-			tag.assign((n<<2)+1,t_id());
+			return min_left(r,[](S x){return f(x);});
 		}
-		void clear()
+		template<typename F>
+		int min_left(int r,F&& f)
 		{
-			n=0;
-			val.clear();
-			tag.clear();
+			if(r==0)return 1;
+			r+=sz;
+			for(int i=lg;i>=1;i--)push_down((r-1)>>i,1<<i);
+			S v=s_id();
+			do
+			{
+				r--;
+				while(r>1&&(r&1))r>>=1;
+				if(!f(s_op_s_s(val[r],v)))
+				{
+					int len=sz>>(bit_width<uint32_t>(r)-1);
+					while(r<sz)
+					{
+						push_down(r,len);
+						r=r<<1|1;
+						len>>=1;
+						S tmp=s_op_s_s(val[r],v);
+						if(f(tmp))
+						{
+							v=tmp;
+							r--;
+						}
+					}
+					return r-sz+2;
+				}
+				v=s_op_s_s(val[r],v);
+			}while((r&-r)!=r);
+			return 1;
 		}
 	};
+	template<typename S,typename SId,typename SOpSS>
+	using segtree_n=segtree<
+		S,null_t,SId,null_id,is_null_id,
+		SOpSS,ignore_tag<S>,null_op
+	>;
 }
 #endif
