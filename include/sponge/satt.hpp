@@ -256,7 +256,7 @@ namespace sponge
 			}
 			while(fa(x))splice(fa(x)),x=fa(x),push_up<satt_compress>(x);
 			splay<satt_compress>(z);
-            return x;
+			return x;
 		}
 		void set_root(int x)
 		{
@@ -362,7 +362,7 @@ namespace sponge
 			set_root(root);
 			return res;
 		}
-        int lca(int x,int y)
+		int lca(int x,int y)
 		{
 			int root=find(x);
 			if(root!=find(y))return 0;
