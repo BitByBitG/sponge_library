@@ -12,7 +12,7 @@ namespace sponge
 		using promote_type=U;
 		barrett64()
 		{
-			set_mod(998244353);
+			set_mod(998'244'353);
 		}
 		barrett64(T _p)
 		{
@@ -102,7 +102,7 @@ namespace sponge
 			return fact_v[x]*ifact_v[x-y];
 		}
 	};
-	template<typename T=uint32_t,T m=998244353,bool is_prime=1>
+	template<typename T=uint32_t,T m=998'244'353,bool is_prime=1>
 	class static_modint:public combinatorics<static_modint<T,m,is_prime>>
 	{
 	public:
@@ -390,5 +390,7 @@ namespace sponge
 			return os<<x.val();
 		}
 	};
+	using m9=static_modint<uint32_t,998'244'353,1>;
+	using m10=static_modint<uint32_t,1'000'000'007,1>;
 }
 #endif
