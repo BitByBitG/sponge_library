@@ -16,26 +16,26 @@ namespace sponge
 	using ull=unsigned long long;
 	using ld=long double;
 	class null_t{};
-	template<typename T>
-	constexpr T inf=[]()->T
+	template<typename _T>
+	constexpr _T inf=[]()->_T
 	{
-		if constexpr(is_floating_point_v<T>)return numeric_limits<T>::infinity();
-		else return numeric_limits<T>::max()/2;
+		if constexpr(is_floating_point_v<_T>)return numeric_limits<_T>::infinity();
+		else return numeric_limits<_T>::max()/2;
 	}();
-	template<typename T>
-	constexpr T eps=[]()->T
+	template<typename _T>
+	constexpr _T eps=[]()->_T
 	{
-		if constexpr(is_same_v<T,ld>)return 1e-15;
-		else if constexpr(is_floating_point_v<T>)return 1e-8;
+		if constexpr(is_same_v<_T,ld>)return 1e-15;
+		else if constexpr(is_floating_point_v<_T>)return 1e-8;
 		else return 0;
 	}();
-	template<typename F>
-	void multitest_n(int _n,F&& _f)
+	template<typename _F>
+	void multitest_n(int _n,_F&& _f)
 	{
 		for(int _i=1;_i<=_n;_i++)_f(_i);
 	}
-	template<typename F,typename Stream=istream>
-	void multitest(F&& _f,Stream& _s=cin)
+	template<typename _F,typename _S=istream>
+	void multitest(_F&& _f,_S& _s=cin)
 	{
 		int _n;
 		_s>>_n;
