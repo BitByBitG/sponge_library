@@ -230,7 +230,10 @@ namespace sponge
 			return x.x!=y.x;
 		}
 #if __cplusplus>=202002L
-		friend auto operator<=>(const static_modint x,const static_modint y)=default;
+		friend strong_ordering operator<=>(const static_modint x,const static_modint y)
+		{
+			return x.x<=>y.x;
+		}
 #endif
 		template<typename Istream>
 		friend Istream& operator>>(Istream& is,static_modint& x)
@@ -373,9 +376,10 @@ namespace sponge
 		{
 			return x.x!=y.x;
 		}
-#if __cplusplus>=202002L
-		friend auto operator<=>(const dynamic_modint x,const dynamic_modint y)=default;
-#endif
+		friend strong_ordering operator<=>(const dynamic_modint x,const dynamic_modint& y)
+		{
+			return x.x<=>y.x;
+		}
 		template<typename Istream>
 		friend Istream& operator>>(Istream& is,dynamic_modint& x)
 		{
