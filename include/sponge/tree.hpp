@@ -1,5 +1,5 @@
-#ifndef SPONGE_PTREE_HPP
-#define SPONGE_PTREE_HPP
+#ifndef SPONGE_FOREST_HPP
+#define SPONGE_FOREST_HPP
 #include<sponge/core.hpp>
 #include<sponge/functors.hpp>
 #include<sponge/monoid.hpp>
@@ -9,7 +9,7 @@ namespace sponge
 		typename S,typename T,typename SId,typename TId,typename IsTId,
 		typename SOpSS,typename SOpST,typename TOpTT
 	>
-	class tree:
+	class forest:
 		public double_monoid<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT>
 	{
 	public:
