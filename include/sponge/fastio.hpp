@@ -133,5 +133,10 @@ namespace sponge
 	};
 	using fastio=fastio_base<1<<20,1<<20,1<<6,1<<10>;
 	using str_fastio=fastio_base<1<<20,1<<20,1<<6,1<<20>;
+#ifdef SPONGE_USE_FASTIO
+	fastio fio;
+	#define cin fio
+	#define cout fio
+#endif
 }
 #endif

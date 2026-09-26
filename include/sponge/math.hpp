@@ -24,7 +24,7 @@ namespace sponge
 	{
 		if(y<0)x=-x,y=-y;
 		if(x>=0)return (x+y-1)/y;
-		else return x / y;
+		else return x/y;
 	}
 	ll gcd64(ll x,ll y)
 	{

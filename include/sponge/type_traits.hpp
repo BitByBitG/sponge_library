@@ -26,6 +26,6 @@ namespace sponge
 	template<> struct promote<ll> {using type=__int128_t;};
 	template<> struct promote<ull> { using type=__uint128_t; };
 	template<typename T>
-	using promote_t=promote<T>::type;
+	using promote_t=typename promote<T>::type;
 }
 #endif

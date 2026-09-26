@@ -87,8 +87,8 @@ namespace sponge
 		}
 		void linku(int x,int y,const T& v)
 		{
-			link(x,y);
-			link(y,x);
+			link(x,y,v);
+			link(y,x,v);
 		}
 		vector<T> dijkstra(const vector<int>& s)
 		{

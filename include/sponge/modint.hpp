@@ -124,7 +124,7 @@ namespace sponge
 		constexpr static_modint(U _x)
 		{
 			_x%=smod();
-			if(_x<0)_x+=smod();
+			if constexpr(!is_same<U,bool>::value)if(_x<0)_x+=smod();
 			x=_x;
 		}
 		T val()const

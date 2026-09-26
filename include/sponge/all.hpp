@@ -23,6 +23,7 @@
 #include<sponge/segtree.hpp>
 #include<sponge/forest.hpp>
 #include<sponge/tree.hpp>
+#include<sponge/pforest.hpp>
 #include<sponge/ptree.hpp>
 #include<sponge/satt.hpp>
 #include<sponge/wblt.hpp>
