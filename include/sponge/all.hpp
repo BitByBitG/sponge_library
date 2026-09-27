@@ -3,10 +3,11 @@
 
 #include<sponge/core.hpp>
 #include<sponge/utility.hpp>
-#include<sponge/fastio.hpp>
-#include<sponge/functors.hpp>
+#include<sponge/container.hpp>
 #include<sponge/type_traits.hpp>
 #include<sponge/bit.hpp>
+#include<sponge/functors.hpp>
+#include<sponge/fastio.hpp>
 
 #include<sponge/shortest_path.hpp>
 #include<sponge/tarjan.hpp>
@@ -35,10 +36,13 @@
 #include<sponge/poly.hpp>
 #include<sponge/matrix.hpp>
 
+#include<sponge/string_algo.hpp>
+#include<sponge/string_hash.hpp>
+#include<sponge/suffix_array.hpp>
+#include<sponge/ac_automaton.hpp>
+
 #include<sponge/radix_sort.hpp>
 #include<sponge/splitmix64.hpp>
-#include<sponge/strings.hpp>
-#include<sponge/multiprecision.hpp>
 #include<sponge/bitset.hpp>
 #include<sponge/geometry.hpp>
 
