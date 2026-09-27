@@ -2,6 +2,7 @@
 #define SPONGE_BOUNDED_FLOWS_HPP
 #include<sponge/core.hpp>
 #include<sponge/flows.hpp>
+#include<sponge/type_traits.hpp>
 namespace sponge
 {
 	template<typename Flow=ll,template<typename>class Base=mf_graph>

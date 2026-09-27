@@ -1,6 +1,7 @@
 #ifndef SPONGE_LINEAR_PROGRAMMING_HPP
 #define SPONGE_LINEAR_PROGRAMMING_HPP
 #include<sponge/core.hpp>
+#include<sponge/type_traits.hpp>
 namespace sponge
 {
 	enum lp_ret

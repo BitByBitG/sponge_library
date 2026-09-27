@@ -1,6 +1,7 @@
 #ifndef SPONGELIB_K_SHORTEST_WALK_HPP
 #define SPONGELIB_K_SHORTEST_WALK_HPP
 #include<sponge/core.hpp>
+#include<sponge/type_traits.hpp>
 namespace sponge
 {
 	namespace detail

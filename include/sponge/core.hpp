@@ -16,27 +16,6 @@ namespace sponge
 	using ull=unsigned long long;
 	using ld=long double;
 	class null_t{};
-	namespace detail
-	{
-		template<typename T,enable_if_t<is_floating_point<T>::value,int> =0>
-		constexpr T inf_impl()
-		{ return numeric_limits<T>::infinity(); }
-		template<typename T,enable_if_t<is_integral<T>::value,int> =0>
-		constexpr T inf_impl()
-		{ return numeric_limits<T>::max()>>1; }
-		constexpr ld eps_impl()
-		{ return 1e-15L; }
-		template<typename T,enable_if_t<is_floating_point<T>::value,int> =0>
-		constexpr T eps_impl()
-		{ return 1e-9; }
-		template<typename T>
-		constexpr T eps_impl()
-		{ return 0; }
-	}
-	template<typename T>
-	constexpr T inf=detail::inf_impl<T>();
-	template<typename T>
-	constexpr T eps=detail::eps_impl<T>();
 	template<typename _F>
 	void multitest_n(int _n,_F&& _f)
 	{

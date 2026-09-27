@@ -1,6 +1,7 @@
 #ifndef SPONGE_SHORTEST_PATH_HPP
 #define SPONGE_SHORTEST_PATH_HPP
 #include<sponge/core.hpp>
+#include<sponge/type_traits.hpp>
 namespace sponge
 {
 	template<typename T>

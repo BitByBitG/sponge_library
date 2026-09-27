@@ -1,6 +1,7 @@
 #ifndef SPONGE_BLOSSOM_HPP
 #define SPONGE_BLOSSOM_HPP
 #include<sponge/core.hpp>
+#include<sponge/type_traits.hpp>
 namespace sponge
 {
 	class blossom

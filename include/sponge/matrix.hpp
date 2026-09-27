@@ -2,6 +2,7 @@
 #define SPONGE_MATRIX_HPP
 #include<sponge/core.hpp>
 #include<sponge/functors.hpp>
+#include<sponge/type_traits.hpp>
 namespace sponge
 {
 	template<
