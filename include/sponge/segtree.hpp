@@ -54,8 +54,8 @@ namespace sponge
 		{
 			if(!is_t_id(tag[x]))
 			{
-				apply_tag(ls(x),tag[x],len);
-				apply_tag(rs(x),tag[x],len);
+				apply_tag(ls(x),tag[x],len>>1);
+				apply_tag(rs(x),tag[x],len>>1);
 				tag[x]=t_id();
 			}
 		}

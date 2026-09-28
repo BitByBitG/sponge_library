@@ -133,7 +133,7 @@ namespace sponge
 		SOpSS,ignore_tag<S,SizeType>,null_op,SizeType
 	>;
 	template<typename S,typename SId,typename SizeType=int>
-	using tree_nn=tree_n<S,SId,ordered_op<S>,SizeType>;
+	using tree_nn=tree_n<S,SId,select_second<S>,SizeType>;
 	template<typename Compare,typename S,typename SId,typename SOpSS,typename SizeType=int>
 	using ordered_tree_n=ordered_tree<
 		Compare,
@@ -141,7 +141,7 @@ namespace sponge
 		SOpSS,ignore_tag<S,SizeType>,null_op,SizeType
 	>;
 	template<typename Compare,typename S,typename SId,typename SizeType=int>
-	using ordered_tree_nn=ordered_tree_n<Compare,S,SId,ordered_op<S>,SizeType>;
+	using ordered_tree_nn=ordered_tree_n<Compare,S,SId,select_second<S>,SizeType>;
 	template<typename S,typename SId,typename SOpSS,typename SizeType=int>
 	using forest_n=typename tree_n<S,SId,SOpSS,SizeType>::Fr;
 	template<typename S,typename SId,typename SizeType=int>

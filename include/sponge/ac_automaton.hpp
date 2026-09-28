@@ -1,6 +1,7 @@
 #ifndef SPONGE_AC_AUTOMATON_HPP
 #define SPONGE_AC_AUTOMATON_HPP
 #include<sponge/core.hpp>
+#include<sponge/functors.hpp>
 namespace sponge
 {
 	template<int diff>
@@ -73,7 +74,7 @@ namespace sponge
 				if(!trie[x].son[d])trie[x].son[d]=alloc();
 				x=trie[x].son[d];
 			}
-			trie[x].data=insert_fn(*this,x);
+			trie[x].data=insert_fn(*this,x,pattern);
 			return x;
 		}
 		void build()
@@ -101,5 +102,7 @@ namespace sponge
 			}
 		}
 	};
+	template<typename String=string,int _sigma=26,typename Mapping=lower_to_num>
+	using ac_automaton_n=ac_automaton<null_t,null_id,null_auto,null_auto,String,_sigma,Mapping>;
 }
 #endif
