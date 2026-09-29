@@ -2,7 +2,7 @@
 #define SPONGE_FOREST_HPP
 #include<sponge/core.hpp>
 #include<sponge/monoid.hpp>
-#include<sponge/functors.hpp>
+#include<sponge/functor.hpp>
 namespace sponge
 {
 	template<

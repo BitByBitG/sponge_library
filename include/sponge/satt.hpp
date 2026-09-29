@@ -2,7 +2,7 @@
 #define SPONGE_SATT_HPP
 #include<sponge/core.hpp>
 #include<sponge/monoid.hpp>
-#include<sponge/functors.hpp>
+#include<sponge/functor.hpp>
 namespace sponge
 {
 	enum satt_cluster:bool

@@ -2,7 +2,7 @@
 #define SPONGE_SEGTREE_HPP
 #include<sponge/core.hpp>
 #include<sponge/monoid.hpp>
-#include<sponge/functors.hpp>
+#include<sponge/functor.hpp>
 #include<sponge/bit.hpp>
 namespace sponge
 {

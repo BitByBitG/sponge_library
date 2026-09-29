@@ -1,5 +1,5 @@
-#ifndef SPONGE_FUNCTORS_HPP
-#define SPONGE_FUNCTORS_HPP
+#ifndef SPONGE_FUNCTOR_HPP
+#define SPONGE_FUNCTOR_HPP
 #include<sponge/core.hpp>
 #include<sponge/type_traits.hpp>
 namespace sponge

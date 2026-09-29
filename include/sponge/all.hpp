@@ -6,7 +6,7 @@
 #include<sponge/container.hpp>
 #include<sponge/type_traits.hpp>
 #include<sponge/bit.hpp>
-#include<sponge/functors.hpp>
+#include<sponge/functor.hpp>
 #include<sponge/fastio.hpp>
 
 #include<sponge/shortest_path.hpp>

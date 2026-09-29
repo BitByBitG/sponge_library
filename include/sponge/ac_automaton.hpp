@@ -1,7 +1,7 @@
 #ifndef SPONGE_AC_AUTOMATON_HPP
 #define SPONGE_AC_AUTOMATON_HPP
 #include<sponge/core.hpp>
-#include<sponge/functors.hpp>
+#include<sponge/functor.hpp>
 namespace sponge
 {
 	template<int diff>

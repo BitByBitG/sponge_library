@@ -1,7 +1,7 @@
 #ifndef SPONGE_MATRIX_HPP
 #define SPONGE_MATRIX_HPP
 #include<sponge/core.hpp>
-#include<sponge/functors.hpp>
+#include<sponge/functor.hpp>
 #include<sponge/type_traits.hpp>
 namespace sponge
 {
