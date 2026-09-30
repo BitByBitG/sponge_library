@@ -1,0 +1,9 @@
+#ifndef SPONGE_STRING
+#define SPONGE_STRING
+
+#include<sponge/string_algo.hpp>
+#include<sponge/string_hash.hpp>
+#include<sponge/suffix_array.hpp>
+#include<sponge/ac_automaton.hpp>
+
+#endif

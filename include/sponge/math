@@ -1,0 +1,10 @@
+#ifndef SPONGE_MATH
+#define SPONGE_MATH
+
+#include<sponge/math.hpp>
+#include<sponge/modint.hpp>
+#include<sponge/number_theory.hpp>
+#include<sponge/poly.hpp>
+#include<sponge/matrix.hpp>
+
+#endif

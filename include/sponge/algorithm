@@ -1,0 +1,8 @@
+#ifndef SPONGE_ALGORITHM
+#define SPONGE_ALGORITHM
+
+#include<sponge/radix_sort.hpp>
+#include<sponge/splitmix64.hpp>
+#include<sponge/geometry.hpp>
+
+#endif

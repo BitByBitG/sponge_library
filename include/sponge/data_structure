@@ -1,0 +1,16 @@
+#ifndef SPONGE_DATA_STRUCTURE
+#define SPONGE_DATA_STRUCTURE
+
+#include<sponge/monoid.hpp>
+#include<sponge/allocator.hpp>
+#include<sponge/segtree.hpp>
+#include<sponge/forest.hpp>
+#include<sponge/tree.hpp>
+#include<sponge/pforest.hpp>
+#include<sponge/ptree.hpp>
+#include<sponge/satt.hpp>
+#include<sponge/wblt.hpp>
+#include<sponge/heap.hpp>
+#include<sponge/bitset.hpp>
+
+#endif

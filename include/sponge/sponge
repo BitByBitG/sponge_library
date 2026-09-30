@@ -1,0 +1,11 @@
+#ifndef SPONGE
+#define SPONGE
+
+#include<sponge/basic>
+#include<sponge/graph>
+#include<sponge/data_structure>
+#include<sponge/math>
+#include<sponge/string>
+#include<sponge/algorithm>
+
+#endif
