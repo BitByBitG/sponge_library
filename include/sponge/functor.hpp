@@ -103,9 +103,18 @@ namespace sponge
 			return y;
 		}
 	};
-	#define N_DS(B,...) B##_n<__VA_ARGS__>
-	#define NN_DS(B,...) B##_nn<__VA_ARGS__>
-	#define ASSIGN_ID(T) inf<T>
+	template<typename T>
+	constexpr T assign_id=inf<T>+1;
+	template<template<typename...> class Base,typename S,typename SId,typename SOpSS>
+	using n_ds=Base<S,null_t,SId,null_id,is_null_id,SOpSS,ignore_tag<S>,null_op>;
+	template<template<typename...> class Base>
+	using nn_ds=n_ds<Base,null_t,null_id,null_op>;
+	template<template<typename...> class Base,typename S=ll>
+	using sum_ds=n_ds<Base,S,val_fn<S,0>,plus<S>>;
+	template<template<typename...> class Base,typename S=ll>
+	using min_ds=n_ds<Base,S,val_fn<S,inf<S>>,min_fn<S>>;
+	template<template<typename...> class Base,typename S=ll>
+	using max_ds=n_ds<Base,S,val_fn<S,-inf<S>>,max_fn<S>>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
 	using add_sum_ds=Base<
 		S,T,val_fn<S,0>,val_fn<T,0>,is_fn<T,0>,
@@ -113,7 +122,7 @@ namespace sponge
 	>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
 	using assign_sum_ds=Base<
-		S,T,val_fn<S,0>,val_fn<T,ASSIGN_ID(T)>,is_fn<T,ASSIGN_ID(T)>,
+		S,T,val_fn<S,0>,val_fn<T,assign_id<T>>,is_fn<T,assign_id<T>>,
 		plus<S>,range_assign<S,T,SzTp>,select_second<T>
 	>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
@@ -123,7 +132,7 @@ namespace sponge
 	>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
 	using assign_min_ds=Base<
-		S,T,val_fn<S,inf<S>>,val_fn<T,ASSIGN_ID(T)>,is_fn<T,ASSIGN_ID(T)>,
+		S,T,val_fn<S,inf<S>>,val_fn<T,assign_id<T>>,is_fn<T,assign_id<T>>,
 		min_fn<S>,m_assign<S,T,SzTp>,select_second<T>
 	>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
@@ -133,7 +142,7 @@ namespace sponge
 	>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
 	using assign_max_ds=Base<
-		S,T,val_fn<S,-inf<S>>,val_fn<T,ASSIGN_ID(T)>,is_fn<T,ASSIGN_ID(T)>,
+		S,T,val_fn<S,-inf<S>>,val_fn<T,assign_id<T>>,is_fn<T,assign_id<T>>,
 		max_fn<S>,m_assign<S,T,SzTp>,select_second<T>
 	>;
 }
