@@ -4,10 +4,11 @@
 using namespace std;
 namespace fs=filesystem;
 
-constexpr array<string_view,5> default_args=
+constexpr array<string_view,6> default_args=
 {
 	"-std=c++26",
 	"-O2",
+	"-mavx2",
 	"-Wall",
 	"-Wextra",
 	"-DLOCAL"
@@ -49,7 +50,7 @@ int main(int argc,char* argv[])
 	}
 
 	vector<string> args;
-	args.reserve(default_args.size()+argc+5);
+	args.reserve(default_args.size()+argc+6);
 
 	args.emplace_back("g++");
 
