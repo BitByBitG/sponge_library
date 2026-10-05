@@ -2,7 +2,7 @@
 #define SPONGE_BITSET_HPP
 #include<immintrin.h>
 #include<sponge/core.hpp>
-namespace spongelib
+namespace sponge
 {
 	namespace detail
 	{
