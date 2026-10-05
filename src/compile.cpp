@@ -80,7 +80,12 @@ int main(int argc,char* argv[])
 		cerr<<' '<<args[i];
 	cerr<<'\n';
 
+	auto start=chrono::steady_clock::now();
+
 	int ret=_spawnvp(_P_WAIT,cmd[0],cmd.data());
+
+	auto end=chrono::steady_clock::now();
+	double elapsed=chrono::duration<double>(end-start).count();
 
 	if(ret==-1)
 	{
@@ -89,5 +94,6 @@ int main(int argc,char* argv[])
 	}
 
 	cerr<<"g++ returned "<<ret<<".\n";
+	cerr<<fixed<<setprecision(3)<<"time: "<<elapsed<<" s\n";
 	return ret;
 }

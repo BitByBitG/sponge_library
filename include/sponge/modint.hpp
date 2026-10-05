@@ -376,10 +376,12 @@ namespace sponge
 		{
 			return x.x!=y.x;
 		}
+#if __cplusplus>=202002L
 		friend strong_ordering operator<=>(const dynamic_modint x,const dynamic_modint& y)
 		{
 			return x.x<=>y.x;
 		}
+#endif
 		template<typename Istream>
 		friend Istream& operator>>(Istream& is,dynamic_modint& x)
 		{
