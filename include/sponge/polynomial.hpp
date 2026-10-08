@@ -1,5 +1,5 @@
-#ifndef SPONGE_POLY_HPP
-#define SPONGE_POLY_HPP
+#ifndef SPONGE_POLYNOMIAL_HPP
+#define SPONGE_POLYNOMIAL_HPP
 #include<sponge/core.hpp>
 #include<sponge/utility.hpp>
 #include<sponge/bit.hpp>
@@ -7,9 +7,9 @@
 #include<sponge/math.hpp>
 namespace sponge
 {
-	ll Cipolla(ll x,ll p)
+	ll cipolla(ll x,ll p)
 	{
-		uniform_int_distribution<int>uid(0,p-1);
+		uniform_int_distribution<int> uid(0,p-1);
 		if(!x)return 0;
 		else if(power(x,(p-1)>>1,p)==p-1)return -1;
 		else
@@ -436,6 +436,39 @@ namespace sponge
 			solve(solve,1,0,n-1,mul_t(f,inverse(tr[1])));
 			ans.resize(m);
 			return ans;
+		}
+		poly_type interpolation(const poly_type& x,const poly_type& y)
+		{
+			int n=ssize(x);
+			assert(n==ssize(y));
+			if(!n)return {};
+			vector<poly_type> tr(n<<2);
+			auto ls=[](int x){ return x<<1; };
+			auto rs=[](int x){ return x<<1|1; };
+			auto build=[&](auto&& build,int p,int l,int r)->void
+			{
+				if(l==r)return tr[p]={-x[l],1},[]{}();
+				int mid=(l+r)>>1;
+				build(build,ls(p),l,mid);
+				build(build,rs(p),mid+1,r);
+				tr[p]=convolution(tr[ls(p)],tr[rs(p)]);
+			};
+			build(build,1,0,n-1);
+			poly_type d=evaluation(differentiate(tr[1]),x);
+			for(int i=0;i<n;i++)
+			{
+				assert(d[i].val());
+				d[i]=y[i]*d[i].inv();
+			}
+			auto solve=[&](auto&& solve,int p,int l,int r)->poly_type
+			{
+				if(l==r)return {d[l]};
+				int mid=(l+r)>>1;
+				poly_type a=solve(solve,ls(p),l,mid);
+				poly_type b=solve(solve,rs(p),mid+1,r);
+				return plus(convolution(a,tr[rs(p)]),convolution(b,tr[ls(p)]));
+			};
+			return solve(solve,1,0,n-1);
 		}
 	};
 }

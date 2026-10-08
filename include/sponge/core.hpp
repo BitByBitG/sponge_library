@@ -3,11 +3,6 @@
 #define SPONGELIB_VERSION "1.0.0"
 #include<bits/stdc++.h>
 #include<cassert>
-#ifdef __GNUC__
-#define INLINE __attribute__((always_inline)) inline
-#else
-#define INLINE inline
-#endif
 namespace sponge
 {
 	using namespace std;
@@ -16,6 +11,26 @@ namespace sponge
 	using ull=unsigned long long;
 	using ld=long double;
 	class null_t{};
+#ifdef __GNUC__
+#define INLINE __attribute__((always_inline)) inline
+#else
+#define INLINE inline
+#endif
+#ifdef SPONGE_LOCAL
+#define sponge_assert(condition) \
+	if(!(condition)) \
+	{ \
+		cerr<<"Sponge assertion failed: " #condition ", file "<<__FILE__<<", line "<< __LINE__<<"\n"; \
+		throw runtime_error("Sponge assertion failed"); \
+	}
+#define sponge_debug(message) \
+	{\
+		cerr<<(message)<<'\n';\
+	}
+#else
+#define sponge_assert(condition)
+#define sponge_debug(message)
+#endif
 	template<typename _F>
 	void multitest_n(int _n,_F&& _f)
 	{

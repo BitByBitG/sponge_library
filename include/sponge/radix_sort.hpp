@@ -85,14 +85,14 @@ namespace sponge
 			a[i]=bit_cast<float>(u);
 		}
 	}
-	template<typename RAIte,enable_if_t<is_same_v<typename iterator_traits<RAIte>::value_type,uint64_t>,int> = 0>
+	template<typename RAIte,enable_if_t<is_same_v<typename iterator_traits<RAIte>::value_type,ull>,int> = 0>
 	void radix_sort(RAIte first,RAIte last)
 	{
 		const int n=last-first;
 		if(n<=1)return;
 		detail::radix_sort_64(&*first,n);
 	}
-	template<typename RAIte,enable_if_t<is_same_v<typename iterator_traits<RAIte>::value_type,int64_t>,int> = 0>
+	template<typename RAIte,enable_if_t<is_same_v<typename iterator_traits<RAIte>::value_type,ll>,int> = 0>
 	void radix_sort(RAIte first,RAIte last)
 	{
 		const int n=last-first;
@@ -106,19 +106,19 @@ namespace sponge
 	{
 		const int n=last-first;
 		if(n<=1)return;
-		vector<uint64_t> buf(n);
+		vector<ull> buf(n);
 		RAIte a=first;
-		uint64_t* b=buf.data();
+		ull* b=buf.data();
 		for(int i=0;i<n;i++)
 		{
-			uint64_t u=bit_cast<uint64_t>(a[i]);
+			ull u=bit_cast<ull>(a[i]);
 			u=(u>>63)?~u:(u^0x8000000000000000ull);
 			b[i]=u;
 		}
 		detail::radix_sort_64(b,n);
 		for(int i=0;i<n;i++)
 		{
-			uint64_t u=b[i];
+			ull u=b[i];
 			u=(u>>63)?(u^0x8000000000000000ull):~u;
 			a[i]=bit_cast<double>(u);
 		}

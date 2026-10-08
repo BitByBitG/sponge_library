@@ -308,7 +308,7 @@ namespace sponge
 			int u=root[e.u],v=root[e.v];
 			if(!col[v])
 			{
-				assert(mat[v]);
+				sponge_assert(mat[v]);
 				fa[v]=e.u;
 				col[v]=2;
 				int nu=root[mat[v]];
@@ -342,7 +342,7 @@ namespace sponge
 				while(!que.empty())
 				{
 					int p=que.front();que.pop();
-					assert(col[root[p]]==1);
+					sponge_assert(col[root[p]]==1);
 					for(int i=1;i<=n;i++)
 					{
 						if(g[p][i].w==0||root[i]==root[p])continue;

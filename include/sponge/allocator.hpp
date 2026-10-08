@@ -83,7 +83,7 @@ namespace sponge
 				stk.pop_back();
 				return pointer(x);
 			}
-			if(++top>=cap)throw runtime_error("bad alloc");
+			sponge_assert(++top<cap);
 			return pointer(top);
 		}
 		static void free1(pointer p)

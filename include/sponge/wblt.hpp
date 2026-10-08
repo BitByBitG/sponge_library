@@ -13,7 +13,7 @@ namespace sponge
 		using value_type=Key;
 		using value_compare=Compare;
 		using allocator_type=Alloc;
-		inline static constexpr Compare cmp{};
+		Compare cmp{};
 		using alloc_traits=allocator_traits<Alloc>;
 	private:
 		struct node_t;
@@ -46,7 +46,7 @@ namespace sponge
 			constexpr node_t():fa(),son{},size(),key(){}
 			constexpr node_t(const Key& v):fa(),son{},size(1),key(v){}
 		};
-		static bool cmpeq(const Key& x,const Key& y)
+		bool cmpeq(const Key& x,const Key& y)
 		{
 			return !cmp(x,y)&&!cmp(y,x);
 		}
@@ -135,8 +135,9 @@ namespace sponge
 		{
 			if(!x)return nullptr;
 			ptr_t y=alloc_node(*x);
-			(y->son[0]=copy_tree(x->son[0]))->fa=y;
-			(y->son[1]=copy_tree(x->son[1]))->fa=y;
+			if((y->son[0]=copy_tree(x->son[0])))y->son[0]->fa=y;
+			if((y->son[1]=copy_tree(x->son[1])))y->son[1]->fa=y;
+			return y;
 		}
 		static void push_up(ptr_t x)
 		{
@@ -252,7 +253,7 @@ namespace sponge
 				return {merge(a,c),d};
 			}
 		}
-		static ptr_t insert(ptr_t& x,const Key& v)
+		ptr_t insert(ptr_t& x,const Key& v)
 		{
 			if(x==nullptr)return x=alloc_node(v);
 			if(x->size==1)
@@ -272,7 +273,7 @@ namespace sponge
 			balance(x);
 			return ans;
 		}
-		static bool erase(ptr_t& x,const Key& v)
+		bool erase(ptr_t& x,const Key& v)
 		{
 			if(x==nullptr)return 0;
 			if(x->size==1)
@@ -407,15 +408,17 @@ namespace sponge
 	private:
 		ptr_t root,guard;
 	public:
-		wblt():root(nullptr),guard(alloc_node())
+		wblt():wblt(Compare{}){}
+		explicit wblt(Compare c):cmp(move(c)),root(nullptr),guard(alloc_node())
 		{
 			guard->size=-1;
 			maintain_guard();
 		}
 		template<typename Compare2,typename Alloc2>
+			requires(!is_same_v<Compare,Compare2>||!is_same_v<Alloc,Alloc2>)
 		wblt(wblt<Key,Compare2,Alloc2>& t):root(nullptr),guard(alloc_node())
 		{
-			guard->size==-1;
+			guard->size=-1;
 			maintain_guard();
 			insert(t.begin(),t.end());
 		}
@@ -432,12 +435,12 @@ namespace sponge
 			maintain_guard();
 			insert(il);
 		}
-		wblt(const wblt& t)noexcept:root(copy_tree(t.root)),guard(alloc_node())
+		wblt(const wblt& t):cmp(t.cmp),root(copy_tree(t.root)),guard(alloc_node())
 		{
 			guard->size=-1;
 			maintain_guard();
 		}
-		wblt& operator=(const wblt& t)noexcept
+		wblt& operator=(const wblt& t)
 		{
 			if(this!=&t)
 			{
@@ -446,11 +449,11 @@ namespace sponge
 			}
 			return *this;
 		}
-		wblt(wblt&& t)noexcept:root(t.root),guard(t.guard)
+		wblt(wblt&& t)noexcept(is_nothrow_move_constructible_v<Compare>):cmp(move(t.cmp)),root(t.root),guard(t.guard)
 		{
 			t.root=t.guard=nullptr;
 		}
-		wblt& operator=(wblt&& t)noexcept
+		wblt& operator=(wblt&& t)noexcept(is_nothrow_move_constructible_v<Compare>&&is_nothrow_swappable_v<Compare>)
 		{
 			if(this!=&t)
 			{
@@ -470,7 +473,7 @@ namespace sponge
 		void maintain_guard()
 		{
 			if(root)root->fa=guard;
-			guard->fa=root;
+			if(guard)guard->fa=root;
 		}
 	public:
 		iterator begin()
@@ -520,11 +523,11 @@ namespace sponge
 			root=_build(l,r);
 			maintain_guard();
 		}
-		iterator insert(const Key& v)
+		pair<iterator,bool> insert(const Key& v)
 		{
 			iterator pos=insert(root,v);
 			maintain_guard();
-			return pos;
+			return make_pair(pos,true);
 		}
 		template<typename Iter>
 		void insert(Iter first,Iter last)
@@ -563,13 +566,13 @@ namespace sponge
 		}
 		void swap(wblt& t)
 		{
+			std::swap(cmp,t.cmp);
 			std::swap(root,t.root);
 			std::swap(guard,t.guard);
 		}
 		friend void swap(wblt& x,wblt& y)
 		{
-			swap(x.root,y.root);
-			swap(x.guard,y.guard);
+			x.swap(y);
 		}
 		void simple_merge(wblt& t)
 		{
@@ -588,7 +591,7 @@ namespace sponge
 			t.maintain_guard();
 		}
 	private:
-		static pair<ptr_t,ptr_t> split_v(ptr_t x,const Key& k)
+		pair<ptr_t,ptr_t> split_v(ptr_t x,const Key& k)
 		{
 			if(!x)return {nullptr,nullptr};
 			if(!cmp(k,x->key))return {x,nullptr};
@@ -605,7 +608,7 @@ namespace sponge
 				return {merge(a,c),d};
 			}
 		}
-		static pair<ptr_t,ptr_t> hsplit(ptr_t x,const Key& k)
+		pair<ptr_t,ptr_t> hsplit(ptr_t x,const Key& k)
 		{
 			if(!x)return {nullptr,nullptr};
 			if(cmp(x->key,k))return {x,nullptr};
@@ -622,7 +625,7 @@ namespace sponge
 				return {merge(a,c),d};
 			}
 		}
-		static ptr_t hmerge(ptr_t x,ptr_t y)
+		ptr_t hmerge(ptr_t x,ptr_t y)
 		{
 			if(!x)return y;
 			if(!y)return x;
@@ -651,16 +654,17 @@ namespace sponge
 		int order_of_key(const Key& v)
 		{
 			ptr_t x=root;
-			if(x==nullptr)return 1;
+			if(x==nullptr)return 0;
 			int ans=0;
 			while(x->size>1)
 				if(cmp(x->son[0]->key,v))ans+=x->son[0]->size,x=x->son[1];
 				else x=x->son[0];
 			if(cmp(x->key,v))ans++;
-			return ++ans;
+			return ans;
 		}
 		iterator find_by_order(int n)
 		{
+			++n;
 			if(!n||n>size())return end();
 			return nth(root,n);
 		}
@@ -704,7 +708,7 @@ namespace sponge
 		{
 			auto[a,b]=split(root,k);
 			root=a;
-			wblt<int>t;
+			wblt t(cmp);
 			t.root=b;
 			maintain_guard();
 			t.maintain_guard();
@@ -714,7 +718,7 @@ namespace sponge
 		{
 			auto[a,b]=split_v(root,k);
 			root=a;
-			wblt<int>t;
+			wblt t(cmp);
 			t.root=b;
 			maintain_guard();
 			t.maintain_guard();

@@ -73,11 +73,11 @@ namespace sponge
 			R rhs;
 			template<typename X,typename Y> bitset_binary(X&& x,Y&& y):lhs(std::forward<X>(x)),rhs(std::forward<Y>(y))
 			{
-				assert(lhs.size()==rhs.size());
+				sponge_assert(lhs.size()==rhs.size());
 			}
 			size_t size()const
 			{
-				assert(lhs.size()==rhs.size());
+				sponge_assert(lhs.size()==rhs.size());
 				return lhs.size();
 			}
 			__m256i block_at(size_t i)const
@@ -150,13 +150,13 @@ namespace sponge
 		static_bitset& operator=(static_bitset&&)=default;
 		template<typename E> static_bitset(const detail::bitset_expression<E>& e)
 		{
-			assert(N==e().size());
+			sponge_assert(N==e().size());
 			for(size_t i=0;i<block_count();i++)block_set(i,e().block_at(i));
 			trim();
 		}
 		template<typename E> static_bitset& operator=(const detail::bitset_expression<E>& e)
 		{
-			assert(N==e().size());
+			sponge_assert(N==e().size());
 			for(size_t i=0;i<block_count();i++)block_set(i,e().block_at(i));
 			trim();
 			return *this;
@@ -335,7 +335,7 @@ namespace sponge
 		template <typename E>
 		static_bitset& operator&=(const detail::bitset_expression<E>& e)
 		{
-			assert(m_size == e().size());
+			sponge_assert(m_size == e().size());
 			for (size_t i = 0; i != block_count(); ++i)
 				block_set(i, _mm256_and_si256(block_at(i), e().block_at(i)));
 			trim();
@@ -344,7 +344,7 @@ namespace sponge
 		template <typename E>
 		static_bitset& operator|=(const detail::bitset_expression<E>& e)
 		{
-			assert(m_size == e().size());
+			sponge_assert(m_size == e().size());
 			for (size_t i = 0; i != block_count(); ++i)
 				block_set(i, _mm256_or_si256(block_at(i), e().block_at(i)));
 			trim();
@@ -353,7 +353,7 @@ namespace sponge
 		template <typename E>
 		static_bitset& operator^=(const detail::bitset_expression<E>& e)
 		{
-			assert(m_size == e().size());
+			sponge_assert(m_size == e().size());
 			for (size_t i = 0; i != block_count(); ++i)
 				block_set(i, _mm256_xor_si256(block_at(i), e().block_at(i)));
 			trim();
@@ -362,7 +362,7 @@ namespace sponge
 		template <typename E>
 		static_bitset& operator-=(const detail::bitset_expression<E>& e)
 		{
-			assert(m_size == e().size());
+			sponge_assert(m_size == e().size());
 			for (size_t i = 0; i != block_count(); ++i)
 				block_set(i, _mm256_andnot_si256(e().block_at(i), block_at(i)));
 			trim();
@@ -390,7 +390,7 @@ namespace sponge
 		}
 		friend bool operator<=(const static_bitset& a_set, const static_bitset& b_set)
 		{
-			assert(a_set.size() == b_set.size());
+			sponge_assert(a_set.size() == b_set.size());
 			for (size_t i = 0; i != a_set.block_count(); ++i)
 				if (!_mm256_testc_si256(b_set.block_at(i), a_set.block_at(i)))
 				return false;
@@ -398,7 +398,7 @@ namespace sponge
 		}
 		friend bool operator>=(const static_bitset& a_set, const static_bitset& b_set)
 		{
-			assert(a_set.size() == b_set.size());
+			sponge_assert(a_set.size() == b_set.size());
 			for (size_t i = 0; i != a_set.block_count(); ++i)
 				if (!_mm256_testc_si256(a_set.block_at(i), b_set.block_at(i)))
 				return false;
@@ -406,7 +406,7 @@ namespace sponge
 		}
 		friend bool operator<(const static_bitset& a_set, const static_bitset& b_set)
 		{
-			assert(a_set.size() == b_set.size());
+			sponge_assert(a_set.size() == b_set.size());
 			bool different = false;
 			for (size_t i = 0; i != a_set.block_count(); ++i)
 			{
@@ -418,7 +418,7 @@ namespace sponge
 		}
 		friend bool operator>(const static_bitset& a_set, const static_bitset& b_set)
 		{
-			assert(a_set.size() == b_set.size());
+			sponge_assert(a_set.size() == b_set.size());
 			bool different = false;
 			for (size_t i = 0; i != a_set.block_count(); ++i)
 			{
@@ -997,7 +997,7 @@ namespace sponge
 		template <typename E>
 		dynamic_bitset& operator&=(const detail::bitset_expression<E>& e)
 		{
-			assert(m_size == e().size());
+			sponge_assert(m_size == e().size());
 			for (size_t i = 0; i != block_count(); ++i)
 				block_set(i, _mm256_and_si256(block_at(i), e().block_at(i)));
 			trim();
@@ -1006,7 +1006,7 @@ namespace sponge
 		template <typename E>
 		dynamic_bitset& operator|=(const detail::bitset_expression<E>& e)
 		{
-			assert(m_size == e().size());
+			sponge_assert(m_size == e().size());
 			for (size_t i = 0; i != block_count(); ++i)
 				block_set(i, _mm256_or_si256(block_at(i), e().block_at(i)));
 			trim();
@@ -1015,7 +1015,7 @@ namespace sponge
 		template <typename E>
 		dynamic_bitset& operator^=(const detail::bitset_expression<E>& e)
 		{
-			assert(m_size == e().size());
+			sponge_assert(m_size == e().size());
 			for (size_t i = 0; i != block_count(); ++i)
 				block_set(i, _mm256_xor_si256(block_at(i), e().block_at(i)));
 			trim();
@@ -1024,7 +1024,7 @@ namespace sponge
 		template <typename E>
 		dynamic_bitset& operator-=(const detail::bitset_expression<E>& e)
 		{
-			assert(m_size == e().size());
+			sponge_assert(m_size == e().size());
 			for (size_t i = 0; i != block_count(); ++i)
 				block_set(i, _mm256_andnot_si256(e().block_at(i), block_at(i)));
 			trim();
@@ -1052,7 +1052,7 @@ namespace sponge
 		}
 		friend bool operator<=(const dynamic_bitset& a_set, const dynamic_bitset& b_set)
 		{
-			assert(a_set.size() == b_set.size());
+			sponge_assert(a_set.size() == b_set.size());
 			for (size_t i = 0; i != a_set.block_count(); ++i)
 				if (!_mm256_testc_si256(b_set.block_at(i), a_set.block_at(i)))
 				return false;
@@ -1060,7 +1060,7 @@ namespace sponge
 		}
 		friend bool operator>=(const dynamic_bitset& a_set, const dynamic_bitset& b_set)
 		{
-			assert(a_set.size() == b_set.size());
+			sponge_assert(a_set.size() == b_set.size());
 			for (size_t i = 0; i != a_set.block_count(); ++i)
 				if (!_mm256_testc_si256(a_set.block_at(i), b_set.block_at(i)))
 				return false;
@@ -1068,7 +1068,7 @@ namespace sponge
 		}
 		friend bool operator<(const dynamic_bitset& a_set, const dynamic_bitset& b_set)
 		{
-			assert(a_set.size() == b_set.size());
+			sponge_assert(a_set.size() == b_set.size());
 			bool different = false;
 			for (size_t i = 0; i != a_set.block_count(); ++i)
 			{
@@ -1080,7 +1080,7 @@ namespace sponge
 		}
 		friend bool operator>(const dynamic_bitset& a_set, const dynamic_bitset& b_set)
 		{
-			assert(a_set.size() == b_set.size());
+			sponge_assert(a_set.size() == b_set.size());
 			bool different = false;
 			for (size_t i = 0; i != a_set.block_count(); ++i)
 			{

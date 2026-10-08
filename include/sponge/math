@@ -4,7 +4,9 @@
 #include<sponge/math.hpp>
 #include<sponge/modint.hpp>
 #include<sponge/number_theory.hpp>
-#include<sponge/poly.hpp>
+#include<sponge/polynomial.hpp>
 #include<sponge/matrix.hpp>
+#include<sponge/linear_programming.hpp>
+#include<sponge/two_sat.hpp>
 
 #endif

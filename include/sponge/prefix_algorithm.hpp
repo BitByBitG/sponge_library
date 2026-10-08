@@ -1,5 +1,5 @@
-#ifndef SPONGE_STRING_ALGO_HPP
-#define SPONGE_STRING_ALGO_HPP
+#ifndef SPONGE_PREFIX_ALGORITHM_HPP
+#define SPONGE_PREFIX_ALGORITHM_HPP
 #include<sponge/core.hpp>
 namespace sponge
 {

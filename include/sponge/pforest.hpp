@@ -100,7 +100,7 @@ namespace sponge
 			else
 			{
 				x=++n;
-				if(x>=cap)throw runtime_error("bad alloc");
+				sponge_assert(x<cap);
 			}
 			tr[x]=node_t();
 			return x;

@@ -157,7 +157,7 @@ namespace sponge
 		}
 		dynamic_matrix operator*(const dynamic_matrix& b)const
 		{
-			assert(m==b.n);
+			sponge_assert(m==b.n);
 			int p=b.m;
 			dynamic_matrix c(n,p);
 			for(int i=0;i<n;i++)
@@ -222,7 +222,7 @@ namespace sponge
 		bool feasible=1;
 		using T=Mat::value_type;
 		int n=a.n,m=a.m;
-		assert(m==n+1);
+		sponge_assert(m==n+1);
 		for(int i=0;i<n;i++)
 		{
 			int pivot=i;
