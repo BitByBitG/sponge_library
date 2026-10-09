@@ -17,19 +17,19 @@ namespace sponge
 #define INLINE inline
 #endif
 #ifdef SPONGE_LOCAL
-#define sponge_assert(condition) \
-	if(!(condition)) \
-	{ \
-		cerr<<"Sponge assertion failed: " #condition ", file "<<__FILE__<<", line "<< __LINE__<<"\n"; \
-		throw runtime_error("Sponge assertion failed"); \
+#define ASSERT(condition)\
+	if(!(condition))\
+	{\
+		cerr<<"Assertion failed: " #condition ", file "<<__FILE__<<", line "<< __LINE__<<"\n";\
+		throw runtime_error("Assertion failed");\
 	}
-#define sponge_debug(message) \
+#define DEBUG(message)\
 	{\
 		cerr<<(message)<<'\n';\
 	}
 #else
-#define sponge_assert(condition)
-#define sponge_debug(message)
+#define ASSERT(condition)
+#define DEBUG(message)
 #endif
 	template<typename _F>
 	void multitest_n(int _n,_F&& _f)

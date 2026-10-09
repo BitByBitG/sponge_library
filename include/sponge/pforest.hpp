@@ -100,7 +100,7 @@ namespace sponge
 			else
 			{
 				x=++n;
-				sponge_assert(x<cap);
+				ASSERT(x<cap);
 			}
 			tr[x]=node_t();
 			return x;

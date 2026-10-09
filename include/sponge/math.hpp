@@ -28,6 +28,9 @@ namespace sponge
 	}
 	ll gcd64(ll x,ll y)
 	{
+		x=abs(x);
+		y=abs(y);
+		if(!x||!y)return x|y;
 		ll _x=__builtin_ctzll(x),_y=__builtin_ctzll(y),z=_x<_y?_x:_y,t;
 		y>>=_y;
 		while(x)
@@ -42,6 +45,9 @@ namespace sponge
 	}
 	INLINE ll lcm64(ll x,ll y)
 	{
+		x=abs(x);
+		y=abs(y);
+		if(!x||!y)return 0;
 		return x/gcd64(x,y)*y;
 	}
 	template<typename T,typename U>

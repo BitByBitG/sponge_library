@@ -83,7 +83,7 @@ namespace sponge
 				stk.pop_back();
 				return pointer(x);
 			}
-			sponge_assert(++top<cap);
+			ASSERT(++top<cap);
 			return pointer(top);
 		}
 		static void free1(pointer p)

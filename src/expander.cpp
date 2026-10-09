@@ -183,19 +183,21 @@ struct options_t
 	bool console=false;
 	optional<fs::path> lib;
 	optional<string> origname;
+	optional<fs::path> output;
 };
 
 [[noreturn]] void usage(const char* program,int exit_code)
 {
 	ostream& out=exit_code?cerr:cout;
 	out<<"usage: "<<program
-		<<" [-h] [-c] [--lib LIB] [--origname ORIGNAME] source\n"
+		<<" [-h] [-c] [-o OUTPUT] [--lib LIB] [--origname ORIGNAME] source"
 		<<"\nspongelib expander\n\n"
 		<<"positional arguments:\n"
 		<<"  source                source file\n\n"
 		<<"options:\n"
 		<<"  -h, --help            show this help message and exit\n"
 		<<"  -c, --console         print to stdout\n"
+		<<"  -o, --output OUTPUT   specify output file\n"
 		<<"  --lib LIB             include root containing sponge/\n"
 		<<"  --origname ORIGNAME   report original source line numbers in GCC/Clang messages\n";
 	exit(exit_code);
@@ -224,6 +226,16 @@ options_t parse_options(int argc,char* argv[])
 			}
 			return argv[++i];
 		};
+		if(arg=="-o"||arg=="--output")
+		{
+			opts.output=take_value(arg);
+			continue;
+		}
+		if(arg.starts_with("--output="))
+		{
+			opts.output=arg.substr(9);
+			continue;
+		}
 		if(arg=="--lib")
 		{
 			opts.lib=take_value(arg);
@@ -299,7 +311,18 @@ int main(int argc,char* argv[])
 		Expander expander(move(lib_paths));
 		string output=expander.expand(read_file(opts.source),opts.origname);
 		if(opts.console)cout<<output<<'\n';
-		else write_file("combined.cpp",output);
+		else
+		{
+			fs::path output_path;
+			if(opts.output)output_path=*opts.output;
+			else
+			{
+				output_path=opts.source;
+				output_path.replace_filename(
+					output_path.stem().string()+"_expanded.cpp");
+			}
+			write_file(output_path,output);
+		}
 	}
 	catch(const exception& error)
 	{

@@ -12,5 +12,6 @@
 #include<sponge/wblt.hpp>
 #include<sponge/heap.hpp>
 #include<sponge/bitset.hpp>
+#include<sponge/sparse_table.hpp>
 
 #endif

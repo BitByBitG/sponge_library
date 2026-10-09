@@ -27,7 +27,7 @@ namespace sponge
 	public:
 		Inf _inf;
 		Fa fa;
-		using Ch=typename String::value_type;
+		using Char=typename String::value_type;
 		String s;
 		String v;
 		vector<ll> tag;
@@ -70,16 +70,16 @@ namespace sponge
 		suffix_bst():_inf{},fa{},tr(__cmp_t{this})
 		{
 			tr.insert(0);
-			s.push_back(Ch{});
+			s.push_back(Char{});
 			tag.push_back(0);
 		}
 		suffix_bst(Fa&& _fa):_inf{},fa{_fa},tr(__cmp_t{this})
 		{
 			tr.insert(0);
-			s.push_back(Ch{});
+			s.push_back(Char{});
 			tag.push_back(0);
 		}
-		int push(Ch c)
+		int push(Char c)
 		{
 			int i=s.size();
 			s.push_back(c);
