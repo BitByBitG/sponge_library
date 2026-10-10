@@ -7,7 +7,7 @@ namespace sponge
 {
 	template<
 		typename T,int _n,int _m,
-		typename Zero=zero_fn<T>,typename One=one_fn<T>,
+		typename Zero=zero_t<T>,typename One=one_t<T>,
 		typename Plus=plus<T>,typename Mul=multiplies<T>
 	>
 	class static_matrix:
@@ -97,7 +97,7 @@ namespace sponge
 	};
 	template<
 		typename T,
-		typename Zero=zero_fn<T>,typename One=one_fn<T>,
+		typename Zero=zero_t<T>,typename One=one_t<T>,
 		typename Plus=plus<T>,typename Mul=multiplies<T>
 	>
 	class dynamic_matrix:
@@ -198,23 +198,23 @@ namespace sponge
 	};
 	template<typename T,int n,int m>
 	using s_max_plus_matrix=static_matrix<
-		T,n,m,val_fn<T,-inf<T>>,
-		zero_fn<T>,max_fn<T>,plus<T>
+		T,n,m,constant_t<T,-inf<T>>,
+		zero_t<T>,max_t<T>,plus<T>
 	>;
 	template<typename T,int n,int m>
 	using s_min_plus_matrix=static_matrix<
-		T,n,m,val_fn<T,inf<T>>,
-		zero_fn<T>,min_fn<T>,plus<T>
+		T,n,m,constant_t<T,inf<T>>,
+		zero_t<T>,min_t<T>,plus<T>
 	>;
 	template<typename T>
 	using d_max_plus_matrix=dynamic_matrix<
-		T,val_fn<T,-inf<T>>,
-		zero_fn<T>,max_fn<T>,plus<T>
+		T,constant_t<T,-inf<T>>,
+		zero_t<T>,max_t<T>,plus<T>
 	>;
 	template<typename T>
 	using d_min_plus_matrix=dynamic_matrix<
-		T,val_fn<T,inf<T>>,
-		zero_fn<T>,min_fn<T>,plus<T>
+		T,constant_t<T,inf<T>>,
+		zero_t<T>,min_t<T>,plus<T>
 	>;
 	template<typename Mat>
 	pair<bool,vector<typename Mat::value_type>> gauss(Mat a)

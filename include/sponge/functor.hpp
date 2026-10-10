@@ -5,17 +5,17 @@
 namespace sponge
 {
 	template<typename T,T val>
-	struct val_fn
+	struct constant_t
 	{
 		constexpr T operator()()const{return val;}
 	};
 	template<typename T>
-	struct zero_fn
+	struct zero_t
 	{
 		constexpr T operator()()const{return (T)(0);}
 	};
 	template<typename T>
-	struct one_fn
+	struct one_t
 	{
 		constexpr T operator()()const{return (T)(1);}
 	};
@@ -25,12 +25,12 @@ namespace sponge
 		constexpr bool operator()(const T& x)const{return x==val;}
 	};
 	template<typename T>
-	struct max_fn
+	struct max_t
 	{
 		constexpr T operator()(const T& x,const T& y)const{return max<T>(x,y);}
 	};
 	template<typename T>
-	struct min_fn
+	struct min_t
 	{
 		constexpr T operator()(const T& x,const T& y)const{return min<T>(x,y);}
 	};
@@ -110,40 +110,40 @@ namespace sponge
 	template<template<typename...> class Base>
 	using nn_ds=n_ds<Base,null_t,null_id,null_op>;
 	template<template<typename...> class Base,typename S=ll>
-	using sum_ds=n_ds<Base,S,val_fn<S,0>,plus<S>>;
+	using sum_ds=n_ds<Base,S,constant_t<S,0>,plus<S>>;
 	template<template<typename...> class Base,typename S=ll>
-	using min_ds=n_ds<Base,S,val_fn<S,inf<S>>,min_fn<S>>;
+	using min_ds=n_ds<Base,S,constant_t<S,inf<S>>,min_t<S>>;
 	template<template<typename...> class Base,typename S=ll>
-	using max_ds=n_ds<Base,S,val_fn<S,-inf<S>>,max_fn<S>>;
+	using max_ds=n_ds<Base,S,constant_t<S,-inf<S>>,max_t<S>>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
 	using add_sum_ds=Base<
-		S,T,val_fn<S,0>,val_fn<T,0>,is_fn<T,0>,
+		S,T,constant_t<S,0>,constant_t<T,0>,is_fn<T,0>,
 		plus<S>,range_plus<S,T,SzTp>,plus<T>
 	>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
 	using assign_sum_ds=Base<
-		S,T,val_fn<S,0>,val_fn<T,assign_id<T>>,is_fn<T,assign_id<T>>,
+		S,T,constant_t<S,0>,constant_t<T,assign_id<T>>,is_fn<T,assign_id<T>>,
 		plus<S>,range_assign<S,T,SzTp>,select_second<T>
 	>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
 	using add_min_ds=Base<
-		S,T,val_fn<S,inf<S>>,val_fn<T,0>,is_fn<T,0>,
-		min_fn<S>,m_plus<S,T,SzTp>,plus<T>
+		S,T,constant_t<S,inf<S>>,constant_t<T,0>,is_fn<T,0>,
+		min_t<S>,m_plus<S,T,SzTp>,plus<T>
 	>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
 	using assign_min_ds=Base<
-		S,T,val_fn<S,inf<S>>,val_fn<T,assign_id<T>>,is_fn<T,assign_id<T>>,
-		min_fn<S>,m_assign<S,T,SzTp>,select_second<T>
+		S,T,constant_t<S,inf<S>>,constant_t<T,assign_id<T>>,is_fn<T,assign_id<T>>,
+		min_t<S>,m_assign<S,T,SzTp>,select_second<T>
 	>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
 	using add_max_ds=Base<
-		S,T,val_fn<S,-inf<S>>,val_fn<T,0>,is_fn<T,0>,
-		max_fn<S>,m_plus<S,T,SzTp>,plus<T>
+		S,T,constant_t<S,-inf<S>>,constant_t<T,0>,is_fn<T,0>,
+		max_t<S>,m_plus<S,T,SzTp>,plus<T>
 	>;
 	template<template<typename...> class Base,typename S=ll,typename T=ll,typename SzTp=int>
 	using assign_max_ds=Base<
-		S,T,val_fn<S,-inf<S>>,val_fn<T,assign_id<T>>,is_fn<T,assign_id<T>>,
-		max_fn<S>,m_assign<S,T,SzTp>,select_second<T>
+		S,T,constant_t<S,-inf<S>>,constant_t<T,assign_id<T>>,is_fn<T,assign_id<T>>,
+		max_t<S>,m_assign<S,T,SzTp>,select_second<T>
 	>;
 }
 #endif

@@ -21,7 +21,7 @@ namespace sponge
 			}
 		};
 	}
-	template<typename String=string,typename Inf=val_fn<char,127>,typename Fa=detail::sbst_fa_t,template<typename...> class Bst=detail::sbst_pbds_rbt_t>
+	template<typename String=string,typename Inf=constant_t<char,127>,typename Fa=detail::sbst_fa_t,template<typename...> class Bst=detail::sbst_pbds_rbt_t>
 	class suffix_bst
 	{
 	public:

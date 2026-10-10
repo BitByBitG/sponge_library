@@ -18,18 +18,20 @@ namespace sponge
 #endif
 #ifdef SPONGE_LOCAL
 #define ASSERT(condition)\
-	if(!(condition))\
-	{\
-		cerr<<"Assertion failed: " #condition ", file "<<__FILE__<<", line "<< __LINE__<<"\n";\
-		throw runtime_error("Assertion failed");\
-	}
+	[&](){\
+		if(!(condition))\
+		{\
+			cerr<<"Assertion failed: " #condition ", file "<<__FILE__<<", line "<< __LINE__<<"\n";\
+			throw runtime_error("Assertion failed");\
+		}\
+	}()
 #define DEBUG(message)\
-	{\
+	[&](){\
 		cerr<<(message)<<'\n';\
-	}
+	}()
 #else
-#define ASSERT(condition)
-#define DEBUG(message)
+#define ASSERT(condition) []{}()
+#define DEBUG(message) []{}()
 #endif
 	template<typename _F>
 	void multitest_n(int _n,_F&& _f)

@@ -80,5 +80,37 @@ namespace sponge
 		return to_address(p.operator->());
 	}
 #endif
+	template<typename T,typename F>
+	INLINE T binary_search_f0(T l,T r,F&& f)
+	{
+#if __cplusplus>=202002L
+		return *ranges::partition_point(views::iota(l,r),f);
+#else
+		T ans=r;
+		r--;
+		while(l<=r)
+		{
+			T mid=(l+r)>>1;
+			if(!f(mid))ans=mid,r=mid-1;
+			else l=mid+1;
+		}
+		return ans;
+#endif
+	}
+	template<typename T,typename F>
+	INLINE T binary_search_f1(T l,T r,F&& f)
+	{
+		return binary_search_f0(l,r,not_fn<F>(f));
+	}
+	template<typename T,typename F>
+	INLINE T binary_search_l0(T l,T r,F&& f)
+	{
+		return binary_search_f1(l,r,f)-1;
+	}
+	template<typename T,typename F>
+	INLINE T binary_search_l1(T l,T r,F&& f)
+	{
+		return binary_search_f0(l,r,f)-1;
+	}
 }
 #endif
