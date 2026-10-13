@@ -2,7 +2,7 @@
 #define SPONGE_FLOWS_HPP
 #include<sponge/core.hpp>
 #include<sponge/type_traits.hpp>
-#define ADJACENT(_x,_i,_y,_g) for(int _i=(_g).head[_x],_y=(_g).son[_i];(_i);(_i)=(_g).next[_i],(_y)=(_g).son[_y])
+#define ADJACENT(_x,_i,_y,_g) for(int _i=(_g).head[_x],_y=(_g).son[_i];(_i);(_i)=(_g).next[_i],(_y)=(_g).son[_i])
 namespace sponge
 {
 	template<typename Flow=ll>
