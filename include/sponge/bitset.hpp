@@ -12,7 +12,8 @@ namespace sponge
 			using value_type=T;
 			using is_always_equal=std::true_type;
 			aligned_allocator()=default;
-			template<typename U> aligned_allocator(const aligned_allocator<U>&){}
+			template<typename U>
+			aligned_allocator(const aligned_allocator<U>&){}
 			T* allocate(size_t n)
 			{
 				if(n>std::numeric_limits<size_t>::max()/sizeof(T))throw std::bad_array_new_length();
@@ -22,11 +23,13 @@ namespace sponge
 			{
 				::operator delete(p,std::align_val_t(32));
 			}
-			template<typename U> bool operator==(const aligned_allocator<U>&)const noexcept
+			template<typename U>
+			bool operator==(const aligned_allocator<U>&)const noexcept
 			{
 				return true;
 			}
-			template<typename U> bool operator!=(const aligned_allocator<U>&)const noexcept
+			template<typename U>
+			bool operator!=(const aligned_allocator<U>&)const noexcept
 			{
 				return false;
 			}
@@ -42,7 +45,7 @@ namespace sponge
 		};
 	}
 	class dynamic_bitset;
-	template<size_t N> class static_bitset;
+	template<size_t N>class static_bitset;
 	namespace detail
 	{
 		template<typename T> struct is_bitset:std::false_type{};
@@ -55,34 +58,36 @@ namespace sponge
 		template<typename E>
 		struct bitset_not:bitset_expression<bitset_not<E>>
 		{
-			E value;
-			template<typename T,std::enable_if_t<!std::is_same_v<std::decay_t<T>,bitset_not>,int> =0> explicit bitset_not(T&& x):value(std::forward<T>(x)){}
+			E v;
+			template<typename T,std::enable_if_t<!std::is_same_v<std::decay_t<T>,bitset_not>,int> =0>
+			explicit bitset_not(T&& x):v(std::forward<T>(x)){}
 			size_t size()const
 			{
-				return value.size();
+				return v.size();
 			}
 			__m256i block_at(size_t i)const
 			{
-				return _mm256_xor_si256(value.block_at(i),_mm256_set1_epi64x(-1));
+				return _mm256_xor_si256(v.block_at(i),_mm256_set1_epi64x(-1));
 			}
 		};
 		template<typename L,typename R,int op>
 		struct bitset_binary:bitset_expression<bitset_binary<L,R,op>>
 		{
-			L lhs;
-			R rhs;
-			template<typename X,typename Y> bitset_binary(X&& x,Y&& y):lhs(std::forward<X>(x)),rhs(std::forward<Y>(y))
+			L l;
+			R r;
+			template<typename X,typename Y>
+			bitset_binary(X&& x,Y&& y):l(std::forward<X>(x)),r(std::forward<Y>(y))
 			{
-				ASSERT(lhs.size()==rhs.size());
+				ASSERT(l.size()==r.size());
 			}
 			size_t size()const
 			{
-				ASSERT(lhs.size()==rhs.size());
-				return lhs.size();
+				ASSERT(l.size()==r.size());
+				return l.size();
 			}
 			__m256i block_at(size_t i)const
 			{
-				auto a=lhs.block_at(i),b=rhs.block_at(i);
+				auto a=l.block_at(i),b=r.block_at(i);
 				if constexpr(op==0)return _mm256_and_si256(a,b);
 				else if constexpr(op==1)return _mm256_or_si256(a,b);
 				else if constexpr(op==2)return _mm256_xor_si256(a,b);
@@ -98,7 +103,7 @@ namespace sponge
 	template<typename E,std::enable_if_t<detail::is_expression<E>,int> =0>
 	auto operator!(E&& e)
 	{
-		return ~std::forward<E>(e);
+		return~std::forward<E>(e);
 	}
 	template<typename L,typename R,std::enable_if_t<detail::is_expression<L>&&detail::is_expression<R>,int> =0>
 	auto operator&(L&& a,R&& b)
@@ -129,18 +134,18 @@ namespace sponge
 		static constexpr size_t word_size=64,block_size=4,npos=size_t(-1);
 		using detail::bitset_expression<static_bitset<N>>::operator();
 	private:
-		static constexpr size_t m_size=N;
-		static constexpr size_t word_count(){return N/64+(N%64!=0);}
-		static constexpr size_t block_count(){return N/256+(N%256!=0);}
-		alignas(32) std::array<word,block_count()?block_count()*block_size:block_size> m_data{};
-		void block_set(size_t i,block value)
+		static constexpr size_t sz=N;
+		static constexpr size_t wc(){return N/64+(N%64!=0);}
+		static constexpr size_t bc(){return N/256+(N%256!=0);}
+		alignas(32)std::array<word,bc()?bc()*block_size:block_size>d{};
+		void bs(size_t i,block v)
 		{
-			_mm256_store_si256(reinterpret_cast<block*>(m_data.data()+i*4),value);
+			_mm256_store_si256(reinterpret_cast<block*>(d.data()+i*4),v);
 		}
 		void trim()
 		{
-			if constexpr(N%64)m_data[word_count()-1]&=(word(1)<<(N%64))-1;
-			for(size_t i=word_count();i<m_data.size();i++)m_data[i]=0;
+			if constexpr(N%64)d[wc()-1]&=(word(1)<<(N%64))-1;
+			for(size_t i=wc();i<d.size();i++)d[i]=0;
 		}
 	public:
 		static_bitset()=default;
@@ -151,561 +156,577 @@ namespace sponge
 		template<typename E> static_bitset(const detail::bitset_expression<E>& e)
 		{
 			ASSERT(N==e().size());
-			for(size_t i=0;i<block_count();i++)block_set(i,e().block_at(i));
+			for(size_t i=0;i<bc();i++)bs(i,e().block_at(i));
 			trim();
 		}
 		template<typename E> static_bitset& operator=(const detail::bitset_expression<E>& e)
 		{
 			ASSERT(N==e().size());
-			for(size_t i=0;i<block_count();i++)block_set(i,e().block_at(i));
+			for(size_t i=0;i<bc();i++)bs(i,e().block_at(i));
 			trim();
-			return *this;
+			return*this;
 		}
-		word word_at(size_t i)const{return m_data[i];}
+		word word_at(size_t i)const{return d[i];}
 		block block_at(size_t i)const
 		{
-			return _mm256_load_si256(reinterpret_cast<const block*>(m_data.data()+i*4));
+			return _mm256_load_si256(reinterpret_cast<const block*>(d.data()+i*4));
 		}
-		void swap(static_bitset& other)noexcept{m_data.swap(other.m_data);}
+		void swap(static_bitset& o)noexcept{d.swap(o.d);}
 		friend void swap(static_bitset& a,static_bitset& b)noexcept{a.swap(b);}
-		bool operator[](size_t position) const
+		bool operator[](size_t p)const
 		{
-			if (position >= m_size) return false;
-			return m_data[position / word_size] >> position % word_size & 1;
+			if(p>=sz)return false;
+			return d[p/word_size]>>p%word_size&1;
 		}
-		bool operator()(size_t position) const
+		bool operator()(size_t p)const
 		{
-			if (position >= m_size) return false;
-			return m_data[position / word_size] >> position % word_size & 1;
+			if(p>=sz)return false;
+			return d[p/word_size]>>p%word_size&1;
 		}
-		void set(size_t position)
+		void set(size_t p)
 		{
-			if (position >= m_size) return;
-			m_data[position / word_size] |= 1ULL << position % word_size;
+			if(p>=sz)return;
+			d[p/word_size]|=1ULL<<p%word_size;
 		}
-		void unset(size_t position)
+		void reset(size_t p)
 		{
-			if (position >= m_size) return;
-			m_data[position / word_size] &= ~(1ULL << position % word_size);
+			if(p>=sz)return;
+			d[p/word_size]&=~(1ULL<<p%word_size);
 		}
-		void flip(size_t position)
+		void flip(size_t p)
 		{
-			if (position >= m_size) return;
-			m_data[position / word_size] ^= 1ULL << position % word_size;
+			if(p>=sz)return;
+			d[p/word_size]^=1ULL<<p%word_size;
 		}
-		size_t size() const
+		size_t size()const
 		{
-			return m_size;
+			return sz;
 		}
-		size_t length() const
+		size_t length()const
 		{
-			return m_size;
+			return sz;
 		}
-		size_t count() const
+		size_t count()const
 		{
-			const block mask = _mm256_set1_epi8(0x0F);
-			const block table = _mm256_setr_epi8(
-			0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
-			0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
+			const block mk=_mm256_set1_epi8(0x0F);
+			const block tab=_mm256_setr_epi8(
+			0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
+			0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4
 			);
-			block result = _mm256_setzero_si256();
-			for (size_t i = 0; i != block_count(); ++i)
+			block res=_mm256_setzero_si256();
+			for(size_t i=0;i!=bc();++i)
 			{
-				block value = block_at(i);
-				block low = _mm256_shuffle_epi8(table, _mm256_and_si256(value, mask));
-				block high = _mm256_shuffle_epi8(table, _mm256_and_si256(_mm256_srli_epi16(value, 4), mask));
-				result = _mm256_add_epi64(result, _mm256_sad_epu8(_mm256_add_epi8(low, high), _mm256_setzero_si256()));
+				block v=block_at(i);
+				block lo=_mm256_shuffle_epi8(tab,_mm256_and_si256(v,mk));
+				block hi=_mm256_shuffle_epi8(tab,_mm256_and_si256(_mm256_srli_epi16(v,4),mk));
+				res=_mm256_add_epi64(res,_mm256_sad_epu8(_mm256_add_epi8(lo,hi),_mm256_setzero_si256()));
 			}
-			word parts[block_size];
-			_mm256_storeu_si256((block*)parts, result);
-			return size_t(parts[0] + parts[1] + parts[2] + parts[3]);
+			word part[block_size];
+			_mm256_storeu_si256((block*)part,res);
+			return size_t(part[0]+part[1]+part[2]+part[3]);
 		}
-		size_t popcnt() const
+		size_t popcnt()const
 		{
 			return count();
 		}
-		bool none() const
+		bool none()const
 		{
-			const size_t full_blocks = m_size / 256;
-			for (size_t i = 0; i != full_blocks; ++i)
+			const size_t fb=sz/256;
+			for(size_t i=0;i!=fb;++i)
 			{
-				block mask = _mm256_set1_epi8(-1), value = block_at(i);
-				if (!_mm256_testz_si256(value, mask)) return false;
+				block mk=_mm256_set1_epi8(-1),v=block_at(i);
+				if(!_mm256_testz_si256(v,mk))return false;
 			}
-			if (size_t remaining = m_size % 256)
+			if(size_t rem=sz%256)
 			{
-				word mask_array[block_size] ={};
-				for (size_t i = 0; i != block_size; ++i)
+				word ma[block_size]={};
+				for(size_t i=0;i!=block_size;++i)
 				{
-					if (remaining >= word_size)
+					if(rem>=word_size)
 					{
-						mask_array[i] = ~0ULL;
-						remaining -= word_size;
+						ma[i]=~0ULL;
+						rem-=word_size;
 					}
 					else
 					{
-						mask_array[i] = (1ULL << remaining) - 1;
+						ma[i]=(1ULL<<rem)-1;
 						break;
 					}
 				}
-				block mask = _mm256_loadu_si256((const block*)mask_array), value = block_at(full_blocks);
-				if (!_mm256_testz_si256(value, mask)) return false;
+				block mk=_mm256_loadu_si256((const block*)ma),v=block_at(fb);
+				if(!_mm256_testz_si256(v,mk))return false;
 			}
 			return true;
 		}
-		bool any() const
+		bool any()const
 		{
-			const size_t full_blocks = m_size / 256;
-			for (size_t i = 0; i != full_blocks; ++i)
+			const size_t fb=sz/256;
+			for(size_t i=0;i!=fb;++i)
 			{
-				block mask = _mm256_set1_epi8(-1), value = block_at(i);
-				if (!_mm256_testz_si256(value, mask)) return true;
+				block mk=_mm256_set1_epi8(-1),v=block_at(i);
+				if(!_mm256_testz_si256(v,mk))return true;
 			}
-			if (size_t remaining = m_size % 256)
+			if(size_t rem=sz%256)
 			{
-				word mask_array[block_size] ={};
-				for (size_t i = 0; i != block_size; ++i)
+				word ma[block_size]={};
+				for(size_t i=0;i!=block_size;++i)
 				{
-					if (remaining >= word_size)
+					if(rem>=word_size)
 					{
-						mask_array[i] = ~0ULL;
-						remaining -= word_size;
+						ma[i]=~0ULL;
+						rem-=word_size;
 					}
 					else
 					{
-						mask_array[i] = (1ULL << remaining) - 1;
+						ma[i]=(1ULL<<rem)-1;
 						break;
 					}
 				}
-				block mask = _mm256_loadu_si256((const block*)mask_array), value = block_at(full_blocks);
-				if (!_mm256_testz_si256(value, mask)) return true;
+				block mk=_mm256_loadu_si256((const block*)ma),v=block_at(fb);
+				if(!_mm256_testz_si256(v,mk))return true;
 			}
 			return false;
 		}
-		bool all() const
+		bool all()const
 		{
-			const size_t full_blocks = m_size / 256;
-			for (size_t i = 0; i != full_blocks; ++i)
+			const size_t fb=sz/256;
+			for(size_t i=0;i!=fb;++i)
 			{
-				block mask = _mm256_set1_epi8(-1), value = block_at(i);
-				if (!_mm256_testc_si256(value, mask)) return false;
+				block mk=_mm256_set1_epi8(-1),v=block_at(i);
+				if(!_mm256_testc_si256(v,mk))return false;
 			}
-			if (size_t remaining = m_size % 256)
+			if(size_t rem=sz%256)
 			{
-				word mask_array[block_size] ={};
-				for (size_t i = 0; i != block_size; ++i)
+				word ma[block_size]={};
+				for(size_t i=0;i!=block_size;++i)
 				{
-					if (remaining >= word_size)
+					if(rem>=word_size)
 					{
-						mask_array[i] = ~0ULL;
-						remaining -= word_size;
+						ma[i]=~0ULL;
+						rem-=word_size;
 					}
 					else
 					{
-						mask_array[i] = (1ULL << remaining) - 1;
+						ma[i]=(1ULL<<rem)-1;
 						break;
 					}
 				}
-				block mask = _mm256_loadu_si256((const block*)mask_array), value = block_at(full_blocks);
-				if (!_mm256_testc_si256(value, mask)) return false;
+				block mk=_mm256_loadu_si256((const block*)ma),v=block_at(fb);
+				if(!_mm256_testc_si256(v,mk))return false;
 			}
 			return true;
 		}
 		void set()
 		{
-			const block value = _mm256_set1_epi64x(-1);
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, value);
+			const block v=_mm256_set1_epi64x(-1);
+			for(size_t i=0;i!=bc();++i)
+				bs(i,v);
 			trim();
 		}
-		void unset()
+		void reset()
 		{
-			const block value = _mm256_setzero_si256();
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, value);
+			const block v=_mm256_setzero_si256();
+			for(size_t i=0;i!=bc();++i)
+				bs(i,v);
 			trim();
 		}
 		void flip()
 		{
-			const block value = _mm256_set1_epi64x(-1);
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, _mm256_xor_si256(block_at(i), value));
+			const block v=_mm256_set1_epi64x(-1);
+			for(size_t i=0;i!=bc();++i)
+				bs(i,_mm256_xor_si256(block_at(i),v));
 			trim();
 		}
-		template <typename E>
+		template<typename E>
 		static_bitset& operator&=(const detail::bitset_expression<E>& e)
 		{
-			ASSERT(m_size == e().size());
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, _mm256_and_si256(block_at(i), e().block_at(i)));
+			ASSERT(sz==e().size());
+			for(size_t i=0;i!=bc();++i)
+				bs(i,_mm256_and_si256(block_at(i),e().block_at(i)));
 			trim();
-			return *this;
+			return*this;
 		}
-		template <typename E>
+		template<typename E>
 		static_bitset& operator|=(const detail::bitset_expression<E>& e)
 		{
-			ASSERT(m_size == e().size());
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, _mm256_or_si256(block_at(i), e().block_at(i)));
+			ASSERT(sz==e().size());
+			for(size_t i=0;i!=bc();++i)
+				bs(i,_mm256_or_si256(block_at(i),e().block_at(i)));
 			trim();
-			return *this;
+			return*this;
 		}
-		template <typename E>
+		template<typename E>
 		static_bitset& operator^=(const detail::bitset_expression<E>& e)
 		{
-			ASSERT(m_size == e().size());
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, _mm256_xor_si256(block_at(i), e().block_at(i)));
+			ASSERT(sz==e().size());
+			for(size_t i=0;i!=bc();++i)
+				bs(i,_mm256_xor_si256(block_at(i),e().block_at(i)));
 			trim();
-			return *this;
+			return*this;
 		}
-		template <typename E>
+		template<typename E>
 		static_bitset& operator-=(const detail::bitset_expression<E>& e)
 		{
-			ASSERT(m_size == e().size());
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, _mm256_andnot_si256(e().block_at(i), block_at(i)));
+			ASSERT(sz==e().size());
+			for(size_t i=0;i!=bc();++i)
+				bs(i,_mm256_andnot_si256(e().block_at(i),block_at(i)));
 			trim();
-			return *this;
+			return*this;
 		}
-		friend bool operator==(const static_bitset& a_set, const static_bitset& b_set)
+		friend bool operator==(const static_bitset& x,const static_bitset& y)
 		{
-			if (a_set.size() != b_set.size()) return false;
-			for (size_t i = 0; i != a_set.block_count(); ++i)
+			if(x.size()!=y.size())return false;
+			for(size_t i=0;i!=x.bc();++i)
 			{
-				block bxa = _mm256_xor_si256(b_set.block_at(i), a_set.block_at(i));
-				if (!_mm256_testz_si256(bxa, bxa)) return false;
+				block bxa=_mm256_xor_si256(y.block_at(i),x.block_at(i));
+				if(!_mm256_testz_si256(bxa,bxa))return false;
 			}
 			return true;
 		}
-		friend bool operator!=(const static_bitset& a_set, const static_bitset& b_set)
+		friend bool operator!=(const static_bitset& x,const static_bitset& y)
 		{
-			if (a_set.size() != b_set.size()) return true;
-			for (size_t i = 0; i != a_set.block_count(); ++i)
+			if(x.size()!=y.size())return true;
+			for(size_t i=0;i!=x.bc();++i)
 			{
-				block bxa = _mm256_xor_si256(b_set.block_at(i), a_set.block_at(i));
-				if (!_mm256_testz_si256(bxa, bxa)) return true;
+				block bxa=_mm256_xor_si256(y.block_at(i),x.block_at(i));
+				if(!_mm256_testz_si256(bxa,bxa))return true;
 			}
 			return false;
 		}
-		friend bool operator<=(const static_bitset& a_set, const static_bitset& b_set)
+		friend bool operator<=(const static_bitset& x,const static_bitset& y)
 		{
-			ASSERT(a_set.size() == b_set.size());
-			for (size_t i = 0; i != a_set.block_count(); ++i)
-				if (!_mm256_testc_si256(b_set.block_at(i), a_set.block_at(i)))
+			ASSERT(x.size()==y.size());
+			for(size_t i=0;i!=x.bc();++i)
+				if(!_mm256_testc_si256(y.block_at(i),x.block_at(i)))
 				return false;
 			return true;
 		}
-		friend bool operator>=(const static_bitset& a_set, const static_bitset& b_set)
+		friend bool operator>=(const static_bitset& x,const static_bitset& y)
 		{
-			ASSERT(a_set.size() == b_set.size());
-			for (size_t i = 0; i != a_set.block_count(); ++i)
-				if (!_mm256_testc_si256(a_set.block_at(i), b_set.block_at(i)))
+			ASSERT(x.size()==y.size());
+			for(size_t i=0;i!=x.bc();++i)
+				if(!_mm256_testc_si256(x.block_at(i),y.block_at(i)))
 				return false;
 			return true;
 		}
-		friend bool operator<(const static_bitset& a_set, const static_bitset& b_set)
+		friend bool operator<(const static_bitset& x,const static_bitset& y)
 		{
-			ASSERT(a_set.size() == b_set.size());
-			bool different = false;
-			for (size_t i = 0; i != a_set.block_count(); ++i)
+			ASSERT(x.size()==y.size());
+			bool dif=false;
+			for(size_t i=0;i!=x.bc();++i)
 			{
-				block a = a_set.block_at(i), b = b_set.block_at(i);
-				if (!_mm256_testc_si256(b, a)) return false;
-				different |= !_mm256_testc_si256(a, b);
+				block a=x.block_at(i),b=y.block_at(i);
+				if(!_mm256_testc_si256(b,a))return false;
+				dif|=!_mm256_testc_si256(a,b);
 			}
-			return different;
+			return dif;
 		}
-		friend bool operator>(const static_bitset& a_set, const static_bitset& b_set)
+		friend bool operator>(const static_bitset& x,const static_bitset& y)
 		{
-			ASSERT(a_set.size() == b_set.size());
-			bool different = false;
-			for (size_t i = 0; i != a_set.block_count(); ++i)
+			ASSERT(x.size()==y.size());
+			bool dif=false;
+			for(size_t i=0;i!=x.bc();++i)
 			{
-				block a = a_set.block_at(i), b = b_set.block_at(i);
-				if (!_mm256_testc_si256(a, b)) return false;
-				different |= !_mm256_testc_si256(b, a);
+				block a=x.block_at(i),b=y.block_at(i);
+				if(!_mm256_testc_si256(a,b))return false;
+				dif|=!_mm256_testc_si256(b,a);
 			}
-			return different;
+			return dif;
 		}
-		size_t find_first_set(size_t position=0) const
+		size_t find_first_set(size_t p=0)const
 		{
-			if (position >= m_size) return size_t(-1);
-			size_t word_index = position / word_size, bit_in_word = position % word_size;
-			size_t block_index = word_index / block_size, word_in_block = word_index % block_size;
-			if (word value = m_data[word_index] & ~((1ULL << bit_in_word) - 1))
+			if(p>=sz)return size_t(-1);
+			size_t wi=p/word_size,bi=p%word_size;
+			size_t bj=wi/block_size,wj=wi%block_size;
+			if(word v=d[wi]&~((1ULL<<bi)-1))
 			{
-				size_t result = word_index * word_size + size_t(__builtin_ctzll(value));
-				return result < m_size ? result : size_t(-1);
+				size_t res=wi*word_size+size_t(__builtin_ctzll(v));
+				return res<sz?res:size_t(-1);
 			}
-			while (++word_in_block != block_size)
+			while(++wj!=block_size)
 			{
-				size_t current = block_index * block_size + word_in_block;
-				if (current >= word_count()) break;
-				if (word value = m_data[current])
+				size_t cur=bj*block_size+wj;
+				if(cur>=wc())break;
+				if(word v=d[cur])
 				{
-					size_t result = current * word_size + __builtin_ctzll(value);
-					return result < m_size ? result : size_t(-1);
+					size_t res=cur*word_size+__builtin_ctzll(v);
+					return res<sz?res:size_t(-1);
 				}
 			}
-			while (++block_index != block_count())
+			while(++bj!=bc())
 			{
-				block mask = _mm256_set1_epi64x(-1), value = block_at(block_index);
-				if (_mm256_testz_si256(value, mask)) continue;
-				for (size_t i = 0; i != block_size; ++i)
+				block mk=_mm256_set1_epi64x(-1),v=block_at(bj);
+				if(_mm256_testz_si256(v,mk))continue;
+				for(size_t i=0;i!=block_size;++i)
 				{
-					size_t current = block_index * block_size + i;
-					if (current >= word_count()) break;
-					if (word value = m_data[current])
+					size_t cur=bj*block_size+i;
+					if(cur>=wc())break;
+					if(word v=d[cur])
 					{
-						size_t result = current * word_size + __builtin_ctzll(value);
-						return result < m_size ? result : size_t(-1);
+						size_t res=cur*word_size+__builtin_ctzll(v);
+						return res<sz?res:size_t(-1);
 					}
 				}
 			}
 			return size_t(-1);
 		}
-		size_t find_first_unset(size_t position=0) const
+		size_t find_first_unset(size_t p=0)const
 		{
-			if (position >= m_size) return size_t(-1);
-			size_t word_index = position / word_size, bit_in_word = position % word_size;
-			size_t block_index = word_index / block_size, word_in_block = word_index % block_size;
-			if (word value = ~m_data[word_index] & ~((1ULL << bit_in_word) - 1))
+			if(p>=sz)return size_t(-1);
+			size_t wi=p/word_size,bi=p%word_size;
+			size_t bj=wi/block_size,wj=wi%block_size;
+			if(word v=~d[wi]&~((1ULL<<bi)-1))
 			{
-				size_t result = word_index * word_size + size_t(__builtin_ctzll(value));
-				return result < m_size ? result : size_t(-1);
+				size_t res=wi*word_size+size_t(__builtin_ctzll(v));
+				return res<sz?res:size_t(-1);
 			}
-			while (++word_in_block != block_size)
+			while(++wj!=block_size)
 			{
-				size_t current = block_index * block_size + word_in_block;
-				if (current >= word_count()) break;
-				if (word value = ~m_data[current])
+				size_t cur=bj*block_size+wj;
+				if(cur>=wc())break;
+				if(word v=~d[cur])
 				{
-					size_t result = current * word_size + __builtin_ctzll(value);
-					return result < m_size ? result : size_t(-1);
+					size_t res=cur*word_size+__builtin_ctzll(v);
+					return res<sz?res:size_t(-1);
 				}
 			}
-			while (++block_index != block_count())
+			while(++bj!=bc())
 			{
-				block mask = _mm256_set1_epi64x(-1), value = block_at(block_index);
-				if (_mm256_testc_si256(value, mask)) continue;
-				for (size_t i = 0; i != block_size; ++i)
+				block mk=_mm256_set1_epi64x(-1),v=block_at(bj);
+				if(_mm256_testc_si256(v,mk))continue;
+				for(size_t i=0;i!=block_size;++i)
 				{
-					size_t current = block_index * block_size + i;
-					if (current >= word_count()) break;
-					if (word value = ~m_data[current])
+					size_t cur=bj*block_size+i;
+					if(cur>=wc())break;
+					if(word v=~d[cur])
 					{
-						size_t result = current * word_size + __builtin_ctzll(value);
-						return result < m_size ? result : size_t(-1);
+						size_t res=cur*word_size+__builtin_ctzll(v);
+						return res<sz?res:size_t(-1);
 					}
 				}
 			}
 			return size_t(-1);
 		}
-		void set(size_t position, size_t length)
+		void set(size_t p,size_t len)
 		{
-			if (position > m_size || length > m_size - position || !length) return;
-			size_t word_index = position / word_size, bit_in_word = position % word_size;
-			if (bit_in_word)
+			if(p>sz||len>sz-p||!len)return;
+			size_t wi=p/word_size,bi=p%word_size;
+			if(bi)
 			{
-				size_t head_length = word_size - bit_in_word < length ? word_size - bit_in_word : length;
-				m_data[word_index++] |= ((1ULL << head_length) - 1) << bit_in_word;
-				length -= head_length;
+				size_t hl=word_size-bi<len?word_size-bi:len;
+				d[wi++]|=((1ULL<<hl)-1)<<bi;
+				len-=hl;
 			}
-			for (const block value = _mm256_set1_epi64x(-1); length >= 256; )
+			for(const block v=_mm256_set1_epi64x(-1);len>=256;)
 			{
-				_mm256_storeu_si256((block*)&m_data[word_index], value);
-				length -= 256;
-				word_index += block_size;
+				_mm256_storeu_si256((block*)&d[wi],v);
+				len-=256;
+				wi+=block_size;
 			}
-			while (length >= word_size)
+			while(len>=word_size)
 			{
-				m_data[word_index++] = -1ULL;
-				length -= word_size;
+				d[wi++]=-1ULL;
+				len-=word_size;
 			}
-			if (length) m_data[word_index] |= (1ULL << length) - 1;
+			if(len)d[wi]|=(1ULL<<len)-1;
 		}
-		void unset(size_t position, size_t length)
+		void reset(size_t p,size_t len)
 		{
-			if (position > m_size || length > m_size - position || !length) return;
-			size_t word_index = position / word_size, bit_in_word = position % word_size;
-			if (bit_in_word)
+			if(p>sz||len>sz-p||!len)return;
+			size_t wi=p/word_size,bi=p%word_size;
+			if(bi)
 			{
-				size_t head_length = word_size - bit_in_word < length ? word_size - bit_in_word : length;
-				m_data[word_index++] &= ~(((1ULL << head_length) - 1) << bit_in_word);
-				length -= head_length;
+				size_t hl=word_size-bi<len?word_size-bi:len;
+				d[wi++]&=~(((1ULL<<hl)-1)<<bi);
+				len-=hl;
 			}
-			for (const block value = _mm256_setzero_si256(); length >= 256; )
+			for(const block v=_mm256_setzero_si256();len>=256;)
 			{
-				_mm256_storeu_si256((block*)&m_data[word_index], value);
-				length -= 256;
-				word_index += block_size;
+				_mm256_storeu_si256((block*)&d[wi],v);
+				len-=256;
+				wi+=block_size;
 			}
-			while (length >= word_size)
+			while(len>=word_size)
 			{
-				m_data[word_index++] = 0ULL;
-				length -= word_size;
+				d[wi++]=0ULL;
+				len-=word_size;
 			}
-			if (length) m_data[word_index] &= ~((1ULL << length) - 1);
+			if(len)d[wi]&=~((1ULL<<len)-1);
 		}
-		void flip(size_t position, size_t length)
+		void flip(size_t p,size_t len)
 		{
-			if (position > m_size || length > m_size - position || !length) return;
-			size_t word_index = position / word_size, bit_in_word = position % word_size;
-			if (bit_in_word)
+			if(p>sz||len>sz-p||!len)return;
+			size_t wi=p/word_size,bi=p%word_size;
+			if(bi)
 			{
-				size_t head_length = word_size - bit_in_word < length ? word_size - bit_in_word : length;
-				m_data[word_index++] ^= ((1ULL << head_length) - 1) << bit_in_word;
-				length -= head_length;
+				size_t hl=word_size-bi<len?word_size-bi:len;
+				d[wi++]^=((1ULL<<hl)-1)<<bi;
+				len-=hl;
 			}
-			for (const block value = _mm256_set1_epi64x(-1); length >= 256; )
+			for(const block v=_mm256_set1_epi64x(-1);len>=256;)
 			{
-				_mm256_storeu_si256((block*)&m_data[word_index], _mm256_xor_si256(_mm256_loadu_si256((const block*)&m_data[word_index]), value));
-				length -= 256;
-				word_index += block_size;
+				_mm256_storeu_si256((block*)&d[wi],_mm256_xor_si256(_mm256_loadu_si256((const block*)&d[wi]),v));
+				len-=256;
+				wi+=block_size;
 			}
-			while (length >= word_size)
+			while(len>=word_size)
 			{
-				m_data[word_index++] ^= -1ULL;
-				length -= word_size;
+				d[wi++]^=-1ULL;
+				len-=word_size;
 			}
-			if (length) m_data[word_index] ^= (1ULL << length) - 1;
+			if(len)d[wi]^=(1ULL<<len)-1;
 		}
-		static_bitset& operator<<=(size_t step)
+		static_bitset& operator<<=(size_t s)
 		{
-			if (step >= m_size) return unset(), *this;
-			size_t word_shift = step / word_size, bit_shift = step % word_size;
-			if (!bit_shift)
+			if(s>=sz)return reset(),*this;
+			size_t ws=s/word_size,bt=s%word_size;
+			if(!bt)
 			{
-				memmove(m_data.data() + word_shift, m_data.data(), (word_count() - word_shift) * sizeof(word));
-				memset(m_data.data(), 0, word_shift * sizeof(word));
+				memmove(d.data()+ws,d.data(),(wc()-ws)*sizeof(word));
+				memset(d.data(),0,ws*sizeof(word));
 			}
 			else
 			{
-				size_t remaining = word_count() - word_shift - 1;
-				word *destination = m_data.data() + word_count(), *source = destination - word_shift;
-				__m128i l_shift = _mm_cvtsi32_si128(int(bit_shift)), r_shift = _mm_cvtsi32_si128(int(word_size - bit_shift));
-				while (remaining >= block_size)
+				size_t rem=wc()-ws-1;
+				word* dst=d.data()+wc(),* src=dst-ws;
+				__m128i ls=_mm_cvtsi32_si128(int(bt)),rs=_mm_cvtsi32_si128(int(word_size-bt));
+				while(rem>=block_size)
 				{
-					destination -= block_size, source -= block_size;
-					block low = _mm256_srl_epi64(_mm256_loadu_si256((const block*)&source[-1]), r_shift);
-					block high = _mm256_sll_epi64(_mm256_loadu_si256((const block*)&source[0]), l_shift);
-					_mm256_storeu_si256((block*)destination, _mm256_or_si256(low, high));
-					remaining -= block_size;
+					dst-=block_size,src-=block_size;
+					block lo=_mm256_srl_epi64(_mm256_loadu_si256((const block*)&src[-1]),rs);
+					block hi=_mm256_sll_epi64(_mm256_loadu_si256((const block*)&src[0]),ls);
+					_mm256_storeu_si256((block*)dst,_mm256_or_si256(lo,hi));
+					rem-=block_size;
 				}
-				while (remaining)
+				while(rem)
 				{
-					--destination, --source;
-					*destination = (source[0] << bit_shift) | (source[-1] >> (word_size - bit_shift));
-					--remaining;
+					--dst,--src;
+					*dst=(src[0]<<bt)|(src[-1]>>(word_size-bt));
+					--rem;
 				}
-				*--destination = *--source << bit_shift;
-				memset(m_data.data(), 0, word_shift * sizeof(word));
+				*--dst=*--src<<bt;
+				memset(d.data(),0,ws*sizeof(word));
 			}
 			trim();
-			return *this;
+			return*this;
 		}
-		static_bitset& operator>>=(size_t step)
+		static_bitset& operator>>=(size_t s)
 		{
-			if (step >= m_size) return unset(), *this;
-			size_t word_shift = step / word_size, bit_shift = step % word_size;
-			if (!bit_shift)
+			if(s>=sz)return reset(),*this;
+			size_t ws=s/word_size,bt=s%word_size;
+			if(!bt)
 			{
-				memmove(m_data.data(), m_data.data() + word_shift, (word_count() - word_shift) * sizeof(word));
-				memset(m_data.data() + word_count() - word_shift, 0, word_shift * sizeof(word));
+				memmove(d.data(),d.data()+ws,(wc()-ws)*sizeof(word));
+				memset(d.data()+wc()-ws,0,ws*sizeof(word));
 			}
 			else
 			{
-				size_t remaining = word_count() - word_shift - 1;
-				word *destination = m_data.data(), *source = m_data.data() + word_shift;
-				__m128i r_shift = _mm_cvtsi32_si128(int(bit_shift)), l_shift = _mm_cvtsi32_si128(int(word_size - bit_shift));
-				while (remaining >= block_size)
+				size_t rem=wc()-ws-1;
+				word* dst=d.data(),* src=d.data()+ws;
+				__m128i rs=_mm_cvtsi32_si128(int(bt)),ls=_mm_cvtsi32_si128(int(word_size-bt));
+				while(rem>=block_size)
 				{
-					block low = _mm256_srl_epi64(_mm256_loadu_si256((const block*)&source[0]), r_shift);
-					block high = _mm256_sll_epi64(_mm256_loadu_si256((const block*)&source[1]), l_shift);
-					_mm256_storeu_si256((block*)destination, _mm256_or_si256(low, high));
-					destination += block_size, source += block_size;
-					remaining -= block_size;
+					block lo=_mm256_srl_epi64(_mm256_loadu_si256((const block*)&src[0]),rs);
+					block hi=_mm256_sll_epi64(_mm256_loadu_si256((const block*)&src[1]),ls);
+					_mm256_storeu_si256((block*)dst,_mm256_or_si256(lo,hi));
+					dst+=block_size,src+=block_size;
+					rem-=block_size;
 				}
-				while (remaining)
+				while(rem)
 				{
-					*destination = (source[0] >> bit_shift) | (source[1] << (word_size - bit_shift));
-					++destination, ++source;
-					--remaining;
+					*dst=(src[0]>>bt)|(src[1]<<(word_size-bt));
+					++dst,++src;
+					--rem;
 				}
-				*destination = *source >> bit_shift;
-				memset(m_data.data() + word_count() - word_shift, 0, word_shift * sizeof(word));
+				*dst=*src>>bt;
+				memset(d.data()+wc()-ws,0,ws*sizeof(word));
 			}
 			trim();
-			return *this;
+			return*this;
 		}
-		static_bitset operator<<(size_t step) const
+		static_bitset rotl(int s)const
 		{
-			static_bitset result;
-			if (step >= m_size) return result;
-			size_t word_shift = step / word_size, bit_shift = step % word_size;
-			if (!bit_shift)
+			if(!sz)return*this;
+			size_t k=size_t(s<0?-int64_t(s):s)%sz;
+			if(!k)return*this;
+			if(s<0)k=sz-k;
+			return(*this<<k)|(*this>>(sz-k));
+		}
+		static_bitset rotr(int s)const
+		{
+			if(!sz)return*this;
+			size_t k=size_t(s<0?-int64_t(s):s)%sz;
+			if(!k)return*this;
+			if(s<0)k=sz-k;
+			return(*this>>k)|(*this<<(sz-k));
+		}
+		static_bitset operator<<(size_t s)const
+		{
+			static_bitset res;
+			if(s>=sz)return res;
+			size_t ws=s/word_size,bt=s%word_size;
+			if(!bt)
 			{
-				memcpy(result.m_data.data() + word_shift, m_data.data(), (word_count() - word_shift) * sizeof(word));
+				memcpy(res.d.data()+ws,d.data(),(wc()-ws)*sizeof(word));
 			}
 			else
 			{
-				size_t remaining = word_count() - word_shift - 1;
-				word* destination = result.m_data.data() + word_count();
-				const word* source = m_data.data() + word_count() - word_shift;
-				__m128i l_shift = _mm_cvtsi32_si128(int(bit_shift)), r_shift = _mm_cvtsi32_si128(int(word_size - bit_shift));
-				while (remaining >= block_size)
+				size_t rem=wc()-ws-1;
+				word* dst=res.d.data()+wc();
+				const word* src=d.data()+wc()-ws;
+				__m128i ls=_mm_cvtsi32_si128(int(bt)),rs=_mm_cvtsi32_si128(int(word_size-bt));
+				while(rem>=block_size)
 				{
-					destination -= block_size, source -= block_size;
-					block low = _mm256_srl_epi64(_mm256_loadu_si256((const block*)&source[-1]), r_shift);
-					block high = _mm256_sll_epi64(_mm256_loadu_si256((const block*)&source[0]), l_shift);
-					_mm256_storeu_si256((block*)destination, _mm256_or_si256(low, high));
-					remaining -= block_size;
+					dst-=block_size,src-=block_size;
+					block lo=_mm256_srl_epi64(_mm256_loadu_si256((const block*)&src[-1]),rs);
+					block hi=_mm256_sll_epi64(_mm256_loadu_si256((const block*)&src[0]),ls);
+					_mm256_storeu_si256((block*)dst,_mm256_or_si256(lo,hi));
+					rem-=block_size;
 				}
-				while (remaining)
+				while(rem)
 				{
-					--destination, --source;
-					*destination = (source[0] << bit_shift) | (source[-1] >> (word_size - bit_shift));
-					--remaining;
+					--dst,--src;
+					*dst=(src[0]<<bt)|(src[-1]>>(word_size-bt));
+					--rem;
 				}
-				*--destination = *--source << bit_shift;
+				*--dst=*--src<<bt;
 			}
-			result.trim();
-			return result;
+			res.trim();
+			return res;
 		}
-		static_bitset operator>>(size_t step) const
+		static_bitset operator>>(size_t s)const
 		{
-			static_bitset result;
-			if (step >= m_size) return result;
-			size_t word_shift = step / word_size, bit_shift = step % word_size;
-			if (!bit_shift)
+			static_bitset res;
+			if(s>=sz)return res;
+			size_t ws=s/word_size,bt=s%word_size;
+			if(!bt)
 			{
-				memcpy(result.m_data.data(), m_data.data() + word_shift, (word_count() - word_shift) * sizeof(word));
+				memcpy(res.d.data(),d.data()+ws,(wc()-ws)*sizeof(word));
 			}
 			else
 			{
-				size_t remaining = word_count() - word_shift - 1;
-				word* destination = result.m_data.data();
-				const word* source = m_data.data() + word_shift;
-				__m128i r_shift = _mm_cvtsi32_si128(int(bit_shift)), l_shift = _mm_cvtsi32_si128(int(word_size - bit_shift));
-				while (remaining >= block_size)
+				size_t rem=wc()-ws-1;
+				word* dst=res.d.data();
+				const word* src=d.data()+ws;
+				__m128i rs=_mm_cvtsi32_si128(int(bt)),ls=_mm_cvtsi32_si128(int(word_size-bt));
+				while(rem>=block_size)
 				{
-					block low = _mm256_srl_epi64(_mm256_loadu_si256((const block*)&source[0]), r_shift);
-					block high = _mm256_sll_epi64(_mm256_loadu_si256((const block*)&source[1]), l_shift);
-					_mm256_storeu_si256((block*)destination, _mm256_or_si256(low, high));
-					destination += block_size, source += block_size;
-					remaining -= block_size;
+					block lo=_mm256_srl_epi64(_mm256_loadu_si256((const block*)&src[0]),rs);
+					block hi=_mm256_sll_epi64(_mm256_loadu_si256((const block*)&src[1]),ls);
+					_mm256_storeu_si256((block*)dst,_mm256_or_si256(lo,hi));
+					dst+=block_size,src+=block_size;
+					rem-=block_size;
 				}
-				while (remaining)
+				while(rem)
 				{
-					*destination = (source[0] >> bit_shift) | (source[1] << (word_size - bit_shift));
-					++destination, ++source;
-					--remaining;
+					*dst=(src[0]>>bt)|(src[1]<<(word_size-bt));
+					++dst,++src;
+					--rem;
 				}
-				*destination = *source >> bit_shift;
+				*dst=*src>>bt;
 			}
-			result.trim();
-			return result;
+			res.trim();
+			return res;
 		}
 	};
 	class dynamic_bitset:public detail::bitset_expression<dynamic_bitset>
@@ -716,658 +737,674 @@ namespace sponge
 		static constexpr size_t word_size=64,block_size=4,npos=size_t(-1);
 		using detail::bitset_expression<dynamic_bitset>::operator();
 	private:
-		std::vector<word,detail::aligned_allocator<word>> m_data;
-		size_t m_size=0;
-		static size_t storage_size(size_t n)
+		std::vector<word,detail::aligned_allocator<word>>d;
+		size_t sz=0;
+		static size_t ss(size_t n)
 		{
 			if(n>std::numeric_limits<size_t>::max()-255)throw std::length_error("dynamic_bitset");
-			return ((n+255)/256)*4;
+			return((n+255)/256)*4;
 		}
-		size_t word_count()const
+		size_t wc()const
 		{
-			return m_size/64+(m_size%64!=0);
+			return sz/64+(sz%64!=0);
 		}
-		size_t block_count()const
+		size_t bc()const
 		{
-			return m_data.size()/4;
+			return d.size()/4;
 		}
-		void block_set(size_t i,block value)
+		void bs(size_t i,block v)
 		{
-			_mm256_store_si256(reinterpret_cast<block*>(m_data.data()+i*4),value);
+			_mm256_store_si256(reinterpret_cast<block*>(d.data()+i*4),v);
 		}
 		void trim()
 		{
-			size_t n=word_count();
-			if(m_size%64)m_data[n-1]&=(word(1)<<(m_size%64))-1;
-			for(size_t i=n;i<m_data.size();i++)m_data[i]=0;
+			size_t n=wc();
+			if(sz%64)d[n-1]&=(word(1)<<(sz%64))-1;
+			for(size_t i=n;i<d.size();i++)d[i]=0;
 		}
 	public:
 		dynamic_bitset()=default;
-		explicit dynamic_bitset(size_t n,bool value=false):m_data(storage_size(n),value?~word(0):0),m_size(n)
+		explicit dynamic_bitset(size_t n,bool v=false):d(ss(n),v?~word(0):0),sz(n)
 		{
 			trim();
 		}
 		dynamic_bitset(const dynamic_bitset&)=default;
-		dynamic_bitset(dynamic_bitset&& other)noexcept:m_data(std::move(other.m_data)),m_size(std::exchange(other.m_size,0))
+		dynamic_bitset(dynamic_bitset&& o)noexcept:d(std::move(o.d)),sz(std::exchange(o.sz,0))
 		{
-			other.m_data.clear();
+			o.d.clear();
 		}
-		dynamic_bitset& operator=(const dynamic_bitset& other)
+		dynamic_bitset& operator=(const dynamic_bitset& o)
 		{
-			if(this!=&other)
+			if(this!=&o)
 			{
-				m_data=other.m_data;
-				m_size=other.m_size;
+				d=o.d;
+				sz=o.sz;
 			}
-			return *this;
+			return*this;
 		}
-		dynamic_bitset& operator=(dynamic_bitset&& other)noexcept
+		dynamic_bitset& operator=(dynamic_bitset&& o)noexcept
 		{
-			if(this!=&other)
+			if(this!=&o)
 			{
-				m_data=std::move(other.m_data);
-				m_size=std::exchange(other.m_size,0);
-				other.m_data.clear();
+				d=std::move(o.d);
+				sz=std::exchange(o.sz,0);
+				o.d.clear();
 			}
-			return *this;
+			return*this;
 		}
 		template<typename E> dynamic_bitset(const detail::bitset_expression<E>& e):dynamic_bitset(e().size())
 		{
-			for(size_t i=0;i<block_count();i++)block_set(i,e().block_at(i));
+			for(size_t i=0;i<bc();i++)bs(i,e().block_at(i));
 			trim();
 		}
 		template<typename E> dynamic_bitset& operator=(const detail::bitset_expression<E>& e)
 		{
-			if(m_size!=e().size())
+			if(sz!=e().size())
 			{
 				dynamic_bitset tmp(e);
 				swap(tmp);
-				return *this;
+				return*this;
 			}
-			for(size_t i=0;i<block_count();i++)block_set(i,e().block_at(i));
+			for(size_t i=0;i<bc();i++)bs(i,e().block_at(i));
 			trim();
-			return *this;
+			return*this;
 		}
 		word word_at(size_t i)const
 		{
-			return m_data[i];
+			return d[i];
 		}
 		block block_at(size_t i)const
 		{
-			return _mm256_load_si256(reinterpret_cast<const block*>(m_data.data()+i*4));
+			return _mm256_load_si256(reinterpret_cast<const block*>(d.data()+i*4));
 		}
-		void resize(size_t n,bool value=false)
+		void resize(size_t n,bool v=false)
 		{
-			size_t old=m_size;
-			m_data.resize(storage_size(n),0);
-			m_size=n;
-			if(n>old&&value)set(old,n-old);
+			size_t old=sz;
+			d.resize(ss(n),0);
+			sz=n;
+			if(n>old&&v)set(old,n-old);
 			trim();
 		}
 		void reserve(size_t n)
 		{
-			m_data.reserve(storage_size(n));
+			d.reserve(ss(n));
 		}
 		size_t capacity()const
 		{
-			return m_data.capacity()*64;
+			return d.capacity()*64;
 		}
 		void shrink_to_fit()
 		{
-			m_data.shrink_to_fit();
+			d.shrink_to_fit();
 		}
 		void clear()noexcept
 		{
-			m_data.clear();
-			m_size=0;
+			d.clear();
+			sz=0;
 		}
-		void swap(dynamic_bitset& other)noexcept
+		void swap(dynamic_bitset& o)noexcept
 		{
-			m_data.swap(other.m_data);
-			std::swap(m_size,other.m_size);
+			d.swap(o.d);
+			std::swap(sz,o.sz);
 		}
 		friend void swap(dynamic_bitset& a,dynamic_bitset& b)noexcept
 		{
 			a.swap(b);
 		}
-		bool operator[](size_t position) const
+		bool operator[](size_t p)const
 		{
-			if (position >= m_size) return false;
-			return m_data[position / word_size] >> position % word_size & 1;
+			if(p>=sz)return false;
+			return d[p/word_size]>>p%word_size&1;
 		}
-		bool operator()(size_t position) const
+		bool operator()(size_t p)const
 		{
-			if (position >= m_size) return false;
-			return m_data[position / word_size] >> position % word_size & 1;
+			if(p>=sz)return false;
+			return d[p/word_size]>>p%word_size&1;
 		}
-		void set(size_t position)
+		void set(size_t p)
 		{
-			if (position >= m_size) return;
-			m_data[position / word_size] |= 1ULL << position % word_size;
+			if(p>=sz)return;
+			d[p/word_size]|=1ULL<<p%word_size;
 		}
-		void unset(size_t position)
+		void reset(size_t p)
 		{
-			if (position >= m_size) return;
-			m_data[position / word_size] &= ~(1ULL << position % word_size);
+			if(p>=sz)return;
+			d[p/word_size]&=~(1ULL<<p%word_size);
 		}
-		void flip(size_t position)
+		void flip(size_t p)
 		{
-			if (position >= m_size) return;
-			m_data[position / word_size] ^= 1ULL << position % word_size;
+			if(p>=sz)return;
+			d[p/word_size]^=1ULL<<p%word_size;
 		}
-		size_t size() const
+		size_t size()const
 		{
-			return m_size;
+			return sz;
 		}
-		size_t length() const
+		size_t length()const
 		{
-			return m_size;
+			return sz;
 		}
-		size_t count() const
+		size_t count()const
 		{
-			const block mask = _mm256_set1_epi8(0x0F);
-			const block table = _mm256_setr_epi8(
-			0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
-			0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
+			const block mk=_mm256_set1_epi8(0x0F);
+			const block tab=_mm256_setr_epi8(
+			0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
+			0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4
 			);
-			block result = _mm256_setzero_si256();
-			for (size_t i = 0; i != block_count(); ++i)
+			block res=_mm256_setzero_si256();
+			for(size_t i=0;i!=bc();++i)
 			{
-				block value = block_at(i);
-				block low = _mm256_shuffle_epi8(table, _mm256_and_si256(value, mask));
-				block high = _mm256_shuffle_epi8(table, _mm256_and_si256(_mm256_srli_epi16(value, 4), mask));
-				result = _mm256_add_epi64(result, _mm256_sad_epu8(_mm256_add_epi8(low, high), _mm256_setzero_si256()));
+				block v=block_at(i);
+				block lo=_mm256_shuffle_epi8(tab,_mm256_and_si256(v,mk));
+				block hi=_mm256_shuffle_epi8(tab,_mm256_and_si256(_mm256_srli_epi16(v,4),mk));
+				res=_mm256_add_epi64(res,_mm256_sad_epu8(_mm256_add_epi8(lo,hi),_mm256_setzero_si256()));
 			}
-			word parts[block_size];
-			_mm256_storeu_si256((block*)parts, result);
-			return size_t(parts[0] + parts[1] + parts[2] + parts[3]);
+			word part[block_size];
+			_mm256_storeu_si256((block*)part,res);
+			return size_t(part[0]+part[1]+part[2]+part[3]);
 		}
-		size_t popcnt() const
+		size_t popcnt()const
 		{
 			return count();
 		}
-		bool none() const
+		bool none()const
 		{
-			const size_t full_blocks = m_size / 256;
-			for (size_t i = 0; i != full_blocks; ++i)
+			const size_t fb=sz/256;
+			for(size_t i=0;i!=fb;++i)
 			{
-				block mask = _mm256_set1_epi8(-1), value = block_at(i);
-				if (!_mm256_testz_si256(value, mask)) return false;
+				block mk=_mm256_set1_epi8(-1),v=block_at(i);
+				if(!_mm256_testz_si256(v,mk))return false;
 			}
-			if (size_t remaining = m_size % 256)
+			if(size_t rem=sz%256)
 			{
-				word mask_array[block_size] ={};
-				for (size_t i = 0; i != block_size; ++i)
+				word ma[block_size]={};
+				for(size_t i=0;i!=block_size;++i)
 				{
-					if (remaining >= word_size)
+					if(rem>=word_size)
 					{
-						mask_array[i] = ~0ULL;
-						remaining -= word_size;
+						ma[i]=~0ULL;
+						rem-=word_size;
 					}
 					else
 					{
-						mask_array[i] = (1ULL << remaining) - 1;
+						ma[i]=(1ULL<<rem)-1;
 						break;
 					}
 				}
-				block mask = _mm256_loadu_si256((const block*)mask_array), value = block_at(full_blocks);
-				if (!_mm256_testz_si256(value, mask)) return false;
+				block mk=_mm256_loadu_si256((const block*)ma),v=block_at(fb);
+				if(!_mm256_testz_si256(v,mk))return false;
 			}
 			return true;
 		}
-		bool any() const
+		bool any()const
 		{
-			const size_t full_blocks = m_size / 256;
-			for (size_t i = 0; i != full_blocks; ++i)
+			const size_t fb=sz/256;
+			for(size_t i=0;i!=fb;++i)
 			{
-				block mask = _mm256_set1_epi8(-1), value = block_at(i);
-				if (!_mm256_testz_si256(value, mask)) return true;
+				block mk=_mm256_set1_epi8(-1),v=block_at(i);
+				if(!_mm256_testz_si256(v,mk))return true;
 			}
-			if (size_t remaining = m_size % 256)
+			if(size_t rem=sz%256)
 			{
-				word mask_array[block_size] ={};
-				for (size_t i = 0; i != block_size; ++i)
+				word ma[block_size]={};
+				for(size_t i=0;i!=block_size;++i)
 				{
-					if (remaining >= word_size)
+					if(rem>=word_size)
 					{
-						mask_array[i] = ~0ULL;
-						remaining -= word_size;
+						ma[i]=~0ULL;
+						rem-=word_size;
 					}
 					else
 					{
-						mask_array[i] = (1ULL << remaining) - 1;
+						ma[i]=(1ULL<<rem)-1;
 						break;
 					}
 				}
-				block mask = _mm256_loadu_si256((const block*)mask_array), value = block_at(full_blocks);
-				if (!_mm256_testz_si256(value, mask)) return true;
+				block mk=_mm256_loadu_si256((const block*)ma),v=block_at(fb);
+				if(!_mm256_testz_si256(v,mk))return true;
 			}
 			return false;
 		}
-		bool all() const
+		bool all()const
 		{
-			const size_t full_blocks = m_size / 256;
-			for (size_t i = 0; i != full_blocks; ++i)
+			const size_t fb=sz/256;
+			for(size_t i=0;i!=fb;++i)
 			{
-				block mask = _mm256_set1_epi8(-1), value = block_at(i);
-				if (!_mm256_testc_si256(value, mask)) return false;
+				block mk=_mm256_set1_epi8(-1),v=block_at(i);
+				if(!_mm256_testc_si256(v,mk))return false;
 			}
-			if (size_t remaining = m_size % 256)
+			if(size_t rem=sz%256)
 			{
-				word mask_array[block_size] ={};
-				for (size_t i = 0; i != block_size; ++i)
+				word ma[block_size]={};
+				for(size_t i=0;i!=block_size;++i)
 				{
-					if (remaining >= word_size)
+					if(rem>=word_size)
 					{
-						mask_array[i] = ~0ULL;
-						remaining -= word_size;
+						ma[i]=~0ULL;
+						rem-=word_size;
 					}
 					else
 					{
-						mask_array[i] = (1ULL << remaining) - 1;
+						ma[i]=(1ULL<<rem)-1;
 						break;
 					}
 				}
-				block mask = _mm256_loadu_si256((const block*)mask_array), value = block_at(full_blocks);
-				if (!_mm256_testc_si256(value, mask)) return false;
+				block mk=_mm256_loadu_si256((const block*)ma),v=block_at(fb);
+				if(!_mm256_testc_si256(v,mk))return false;
 			}
 			return true;
 		}
 		void set()
 		{
-			const block value = _mm256_set1_epi64x(-1);
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, value);
+			const block v=_mm256_set1_epi64x(-1);
+			for(size_t i=0;i!=bc();++i)
+				bs(i,v);
 			trim();
 		}
-		void unset()
+		void reset()
 		{
-			const block value = _mm256_setzero_si256();
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, value);
+			const block v=_mm256_setzero_si256();
+			for(size_t i=0;i!=bc();++i)
+				bs(i,v);
 			trim();
 		}
 		void flip()
 		{
-			const block value = _mm256_set1_epi64x(-1);
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, _mm256_xor_si256(block_at(i), value));
+			const block v=_mm256_set1_epi64x(-1);
+			for(size_t i=0;i!=bc();++i)
+				bs(i,_mm256_xor_si256(block_at(i),v));
 			trim();
 		}
-		template <typename E>
+		template<typename E>
 		dynamic_bitset& operator&=(const detail::bitset_expression<E>& e)
 		{
-			ASSERT(m_size == e().size());
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, _mm256_and_si256(block_at(i), e().block_at(i)));
+			ASSERT(sz==e().size());
+			for(size_t i=0;i!=bc();++i)
+				bs(i,_mm256_and_si256(block_at(i),e().block_at(i)));
 			trim();
-			return *this;
+			return*this;
 		}
-		template <typename E>
+		template<typename E>
 		dynamic_bitset& operator|=(const detail::bitset_expression<E>& e)
 		{
-			ASSERT(m_size == e().size());
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, _mm256_or_si256(block_at(i), e().block_at(i)));
+			ASSERT(sz==e().size());
+			for(size_t i=0;i!=bc();++i)
+				bs(i,_mm256_or_si256(block_at(i),e().block_at(i)));
 			trim();
-			return *this;
+			return*this;
 		}
-		template <typename E>
+		template<typename E>
 		dynamic_bitset& operator^=(const detail::bitset_expression<E>& e)
 		{
-			ASSERT(m_size == e().size());
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, _mm256_xor_si256(block_at(i), e().block_at(i)));
+			ASSERT(sz==e().size());
+			for(size_t i=0;i!=bc();++i)
+				bs(i,_mm256_xor_si256(block_at(i),e().block_at(i)));
 			trim();
-			return *this;
+			return*this;
 		}
-		template <typename E>
+		template<typename E>
 		dynamic_bitset& operator-=(const detail::bitset_expression<E>& e)
 		{
-			ASSERT(m_size == e().size());
-			for (size_t i = 0; i != block_count(); ++i)
-				block_set(i, _mm256_andnot_si256(e().block_at(i), block_at(i)));
+			ASSERT(sz==e().size());
+			for(size_t i=0;i!=bc();++i)
+				bs(i,_mm256_andnot_si256(e().block_at(i),block_at(i)));
 			trim();
-			return *this;
+			return*this;
 		}
-		friend bool operator==(const dynamic_bitset& a_set, const dynamic_bitset& b_set)
+		friend bool operator==(const dynamic_bitset& x,const dynamic_bitset& y)
 		{
-			if (a_set.size() != b_set.size()) return false;
-			for (size_t i = 0; i != a_set.block_count(); ++i)
+			if(x.size()!=y.size())return false;
+			for(size_t i=0;i!=x.bc();++i)
 			{
-				block bxa = _mm256_xor_si256(b_set.block_at(i), a_set.block_at(i));
-				if (!_mm256_testz_si256(bxa, bxa)) return false;
+				block bxa=_mm256_xor_si256(y.block_at(i),x.block_at(i));
+				if(!_mm256_testz_si256(bxa,bxa))return false;
 			}
 			return true;
 		}
-		friend bool operator!=(const dynamic_bitset& a_set, const dynamic_bitset& b_set)
+		friend bool operator!=(const dynamic_bitset& x,const dynamic_bitset& y)
 		{
-			if (a_set.size() != b_set.size()) return true;
-			for (size_t i = 0; i != a_set.block_count(); ++i)
+			if(x.size()!=y.size())return true;
+			for(size_t i=0;i!=x.bc();++i)
 			{
-				block bxa = _mm256_xor_si256(b_set.block_at(i), a_set.block_at(i));
-				if (!_mm256_testz_si256(bxa, bxa)) return true;
+				block bxa=_mm256_xor_si256(y.block_at(i),x.block_at(i));
+				if(!_mm256_testz_si256(bxa,bxa))return true;
 			}
 			return false;
 		}
-		friend bool operator<=(const dynamic_bitset& a_set, const dynamic_bitset& b_set)
+		friend bool operator<=(const dynamic_bitset& x,const dynamic_bitset& y)
 		{
-			ASSERT(a_set.size() == b_set.size());
-			for (size_t i = 0; i != a_set.block_count(); ++i)
-				if (!_mm256_testc_si256(b_set.block_at(i), a_set.block_at(i)))
+			ASSERT(x.size()==y.size());
+			for(size_t i=0;i!=x.bc();++i)
+				if(!_mm256_testc_si256(y.block_at(i),x.block_at(i)))
 				return false;
 			return true;
 		}
-		friend bool operator>=(const dynamic_bitset& a_set, const dynamic_bitset& b_set)
+		friend bool operator>=(const dynamic_bitset& x,const dynamic_bitset& y)
 		{
-			ASSERT(a_set.size() == b_set.size());
-			for (size_t i = 0; i != a_set.block_count(); ++i)
-				if (!_mm256_testc_si256(a_set.block_at(i), b_set.block_at(i)))
+			ASSERT(x.size()==y.size());
+			for(size_t i=0;i!=x.bc();++i)
+				if(!_mm256_testc_si256(x.block_at(i),y.block_at(i)))
 				return false;
 			return true;
 		}
-		friend bool operator<(const dynamic_bitset& a_set, const dynamic_bitset& b_set)
+		friend bool operator<(const dynamic_bitset& x,const dynamic_bitset& y)
 		{
-			ASSERT(a_set.size() == b_set.size());
-			bool different = false;
-			for (size_t i = 0; i != a_set.block_count(); ++i)
+			ASSERT(x.size()==y.size());
+			bool dif=false;
+			for(size_t i=0;i!=x.bc();++i)
 			{
-				block a = a_set.block_at(i), b = b_set.block_at(i);
-				if (!_mm256_testc_si256(b, a)) return false;
-				different |= !_mm256_testc_si256(a, b);
+				block a=x.block_at(i),b=y.block_at(i);
+				if(!_mm256_testc_si256(b,a))return false;
+				dif|=!_mm256_testc_si256(a,b);
 			}
-			return different;
+			return dif;
 		}
-		friend bool operator>(const dynamic_bitset& a_set, const dynamic_bitset& b_set)
+		friend bool operator>(const dynamic_bitset& x,const dynamic_bitset& y)
 		{
-			ASSERT(a_set.size() == b_set.size());
-			bool different = false;
-			for (size_t i = 0; i != a_set.block_count(); ++i)
+			ASSERT(x.size()==y.size());
+			bool dif=false;
+			for(size_t i=0;i!=x.bc();++i)
 			{
-				block a = a_set.block_at(i), b = b_set.block_at(i);
-				if (!_mm256_testc_si256(a, b)) return false;
-				different |= !_mm256_testc_si256(b, a);
+				block a=x.block_at(i),b=y.block_at(i);
+				if(!_mm256_testc_si256(a,b))return false;
+				dif|=!_mm256_testc_si256(b,a);
 			}
-			return different;
+			return dif;
 		}
-		size_t find_first_set(size_t position=0) const
+		size_t find_first_set(size_t p=0)const
 		{
-			if (position >= m_size) return size_t(-1);
-			size_t word_index = position / word_size, bit_in_word = position % word_size;
-			size_t block_index = word_index / block_size, word_in_block = word_index % block_size;
-			if (word value = m_data[word_index] & ~((1ULL << bit_in_word) - 1))
+			if(p>=sz)return size_t(-1);
+			size_t wi=p/word_size,bi=p%word_size;
+			size_t bj=wi/block_size,wj=wi%block_size;
+			if(word v=d[wi]&~((1ULL<<bi)-1))
 			{
-				size_t result = word_index * word_size + size_t(__builtin_ctzll(value));
-				return result < m_size ? result : size_t(-1);
+				size_t res=wi*word_size+size_t(__builtin_ctzll(v));
+				return res<sz?res:size_t(-1);
 			}
-			while (++word_in_block != block_size)
+			while(++wj!=block_size)
 			{
-				size_t current = block_index * block_size + word_in_block;
-				if (current >= word_count()) break;
-				if (word value = m_data[current])
+				size_t cur=bj*block_size+wj;
+				if(cur>=wc())break;
+				if(word v=d[cur])
 				{
-					size_t result = current * word_size + __builtin_ctzll(value);
-					return result < m_size ? result : size_t(-1);
+					size_t res=cur*word_size+__builtin_ctzll(v);
+					return res<sz?res:size_t(-1);
 				}
 			}
-			while (++block_index != block_count())
+			while(++bj!=bc())
 			{
-				block mask = _mm256_set1_epi64x(-1), value = block_at(block_index);
-				if (_mm256_testz_si256(value, mask)) continue;
-				for (size_t i = 0; i != block_size; ++i)
+				block mk=_mm256_set1_epi64x(-1),v=block_at(bj);
+				if(_mm256_testz_si256(v,mk))continue;
+				for(size_t i=0;i!=block_size;++i)
 				{
-					size_t current = block_index * block_size + i;
-					if (current >= word_count()) break;
-					if (word value = m_data[current])
+					size_t cur=bj*block_size+i;
+					if(cur>=wc())break;
+					if(word v=d[cur])
 					{
-						size_t result = current * word_size + __builtin_ctzll(value);
-						return result < m_size ? result : size_t(-1);
+						size_t res=cur*word_size+__builtin_ctzll(v);
+						return res<sz?res:size_t(-1);
 					}
 				}
 			}
 			return size_t(-1);
 		}
-		size_t find_first_unset(size_t position=0) const
+		size_t find_first_unset(size_t p=0)const
 		{
-			if (position >= m_size) return size_t(-1);
-			size_t word_index = position / word_size, bit_in_word = position % word_size;
-			size_t block_index = word_index / block_size, word_in_block = word_index % block_size;
-			if (word value = ~m_data[word_index] & ~((1ULL << bit_in_word) - 1))
+			if(p>=sz)return size_t(-1);
+			size_t wi=p/word_size,bi=p%word_size;
+			size_t bj=wi/block_size,wj=wi%block_size;
+			if(word v=~d[wi]&~((1ULL<<bi)-1))
 			{
-				size_t result = word_index * word_size + size_t(__builtin_ctzll(value));
-				return result < m_size ? result : size_t(-1);
+				size_t res=wi*word_size+size_t(__builtin_ctzll(v));
+				return res<sz?res:size_t(-1);
 			}
-			while (++word_in_block != block_size)
+			while(++wj!=block_size)
 			{
-				size_t current = block_index * block_size + word_in_block;
-				if (current >= word_count()) break;
-				if (word value = ~m_data[current])
+				size_t cur=bj*block_size+wj;
+				if(cur>=wc())break;
+				if(word v=~d[cur])
 				{
-					size_t result = current * word_size + __builtin_ctzll(value);
-					return result < m_size ? result : size_t(-1);
+					size_t res=cur*word_size+__builtin_ctzll(v);
+					return res<sz?res:size_t(-1);
 				}
 			}
-			while (++block_index != block_count())
+			while(++bj!=bc())
 			{
-				block mask = _mm256_set1_epi64x(-1), value = block_at(block_index);
-				if (_mm256_testc_si256(value, mask)) continue;
-				for (size_t i = 0; i != block_size; ++i)
+				block mk=_mm256_set1_epi64x(-1),v=block_at(bj);
+				if(_mm256_testc_si256(v,mk))continue;
+				for(size_t i=0;i!=block_size;++i)
 				{
-					size_t current = block_index * block_size + i;
-					if (current >= word_count()) break;
-					if (word value = ~m_data[current])
+					size_t cur=bj*block_size+i;
+					if(cur>=wc())break;
+					if(word v=~d[cur])
 					{
-						size_t result = current * word_size + __builtin_ctzll(value);
-						return result < m_size ? result : size_t(-1);
+						size_t res=cur*word_size+__builtin_ctzll(v);
+						return res<sz?res:size_t(-1);
 					}
 				}
 			}
 			return size_t(-1);
 		}
-		void set(size_t position, size_t length)
+		void set(size_t p,size_t len)
 		{
-			if (position > m_size || length > m_size - position || !length) return;
-			size_t word_index = position / word_size, bit_in_word = position % word_size;
-			if (bit_in_word)
+			if(p>sz||len>sz-p||!len)return;
+			size_t wi=p/word_size,bi=p%word_size;
+			if(bi)
 			{
-				size_t head_length = word_size - bit_in_word < length ? word_size - bit_in_word : length;
-				m_data[word_index++] |= ((1ULL << head_length) - 1) << bit_in_word;
-				length -= head_length;
+				size_t hl=word_size-bi<len?word_size-bi:len;
+				d[wi++]|=((1ULL<<hl)-1)<<bi;
+				len-=hl;
 			}
-			for (const block value = _mm256_set1_epi64x(-1); length >= 256; )
+			for(const block v=_mm256_set1_epi64x(-1);len>=256;)
 			{
-				_mm256_storeu_si256((block*)&m_data[word_index], value);
-				length -= 256;
-				word_index += block_size;
+				_mm256_storeu_si256((block*)&d[wi],v);
+				len-=256;
+				wi+=block_size;
 			}
-			while (length >= word_size)
+			while(len>=word_size)
 			{
-				m_data[word_index++] = -1ULL;
-				length -= word_size;
+				d[wi++]=-1ULL;
+				len-=word_size;
 			}
-			if (length) m_data[word_index] |= (1ULL << length) - 1;
+			if(len)d[wi]|=(1ULL<<len)-1;
 		}
-		void unset(size_t position, size_t length)
+		void reset(size_t p,size_t len)
 		{
-			if (position > m_size || length > m_size - position || !length) return;
-			size_t word_index = position / word_size, bit_in_word = position % word_size;
-			if (bit_in_word)
+			if(p>sz||len>sz-p||!len)return;
+			size_t wi=p/word_size,bi=p%word_size;
+			if(bi)
 			{
-				size_t head_length = word_size - bit_in_word < length ? word_size - bit_in_word : length;
-				m_data[word_index++] &= ~(((1ULL << head_length) - 1) << bit_in_word);
-				length -= head_length;
+				size_t hl=word_size-bi<len?word_size-bi:len;
+				d[wi++]&=~(((1ULL<<hl)-1)<<bi);
+				len-=hl;
 			}
-			for (const block value = _mm256_setzero_si256(); length >= 256; )
+			for(const block v=_mm256_setzero_si256();len>=256;)
 			{
-				_mm256_storeu_si256((block*)&m_data[word_index], value);
-				length -= 256;
-				word_index += block_size;
+				_mm256_storeu_si256((block*)&d[wi],v);
+				len-=256;
+				wi+=block_size;
 			}
-			while (length >= word_size)
+			while(len>=word_size)
 			{
-				m_data[word_index++] = 0ULL;
-				length -= word_size;
+				d[wi++]=0ULL;
+				len-=word_size;
 			}
-			if (length) m_data[word_index] &= ~((1ULL << length) - 1);
+			if(len)d[wi]&=~((1ULL<<len)-1);
 		}
-		void flip(size_t position, size_t length)
+		void flip(size_t p,size_t len)
 		{
-			if (position > m_size || length > m_size - position || !length) return;
-			size_t word_index = position / word_size, bit_in_word = position % word_size;
-			if (bit_in_word)
+			if(p>sz||len>sz-p||!len)return;
+			size_t wi=p/word_size,bi=p%word_size;
+			if(bi)
 			{
-				size_t head_length = word_size - bit_in_word < length ? word_size - bit_in_word : length;
-				m_data[word_index++] ^= ((1ULL << head_length) - 1) << bit_in_word;
-				length -= head_length;
+				size_t hl=word_size-bi<len?word_size-bi:len;
+				d[wi++]^=((1ULL<<hl)-1)<<bi;
+				len-=hl;
 			}
-			for (const block value = _mm256_set1_epi64x(-1); length >= 256; )
+			for(const block v=_mm256_set1_epi64x(-1);len>=256;)
 			{
-				_mm256_storeu_si256((block*)&m_data[word_index], _mm256_xor_si256(_mm256_loadu_si256((const block*)&m_data[word_index]), value));
-				length -= 256;
-				word_index += block_size;
+				_mm256_storeu_si256((block*)&d[wi],_mm256_xor_si256(_mm256_loadu_si256((const block*)&d[wi]),v));
+				len-=256;
+				wi+=block_size;
 			}
-			while (length >= word_size)
+			while(len>=word_size)
 			{
-				m_data[word_index++] ^= -1ULL;
-				length -= word_size;
+				d[wi++]^=-1ULL;
+				len-=word_size;
 			}
-			if (length) m_data[word_index] ^= (1ULL << length) - 1;
+			if(len)d[wi]^=(1ULL<<len)-1;
 		}
-		dynamic_bitset& operator<<=(size_t step)
+		dynamic_bitset& operator<<=(size_t s)
 		{
-			if (step >= m_size) return unset(), *this;
-			size_t word_shift = step / word_size, bit_shift = step % word_size;
-			if (!bit_shift)
+			if(s>=sz)return reset(),*this;
+			size_t ws=s/word_size,bt=s%word_size;
+			if(!bt)
 			{
-				memmove(m_data.data() + word_shift, m_data.data(), (word_count() - word_shift) * sizeof(word));
-				memset(m_data.data(), 0, word_shift * sizeof(word));
+				memmove(d.data()+ws,d.data(),(wc()-ws)*sizeof(word));
+				memset(d.data(),0,ws*sizeof(word));
 			}
 			else
 			{
-				size_t remaining = word_count() - word_shift - 1;
-				word *destination = m_data.data() + word_count(), *source = destination - word_shift;
-				__m128i l_shift = _mm_cvtsi32_si128(int(bit_shift)), r_shift = _mm_cvtsi32_si128(int(word_size - bit_shift));
-				while (remaining >= block_size)
+				size_t rem=wc()-ws-1;
+				word* dst=d.data()+wc(),* src=dst-ws;
+				__m128i ls=_mm_cvtsi32_si128(int(bt)),rs=_mm_cvtsi32_si128(int(word_size-bt));
+				while(rem>=block_size)
 				{
-					destination -= block_size, source -= block_size;
-					block low = _mm256_srl_epi64(_mm256_loadu_si256((const block*)&source[-1]), r_shift);
-					block high = _mm256_sll_epi64(_mm256_loadu_si256((const block*)&source[0]), l_shift);
-					_mm256_storeu_si256((block*)destination, _mm256_or_si256(low, high));
-					remaining -= block_size;
+					dst-=block_size,src-=block_size;
+					block lo=_mm256_srl_epi64(_mm256_loadu_si256((const block*)&src[-1]),rs);
+					block hi=_mm256_sll_epi64(_mm256_loadu_si256((const block*)&src[0]),ls);
+					_mm256_storeu_si256((block*)dst,_mm256_or_si256(lo,hi));
+					rem-=block_size;
 				}
-				while (remaining)
+				while(rem)
 				{
-					--destination, --source;
-					*destination = (source[0] << bit_shift) | (source[-1] >> (word_size - bit_shift));
-					--remaining;
+					--dst,--src;
+					*dst=(src[0]<<bt)|(src[-1]>>(word_size-bt));
+					--rem;
 				}
-				*--destination = *--source << bit_shift;
-				memset(m_data.data(), 0, word_shift * sizeof(word));
+				*--dst=*--src<<bt;
+				memset(d.data(),0,ws*sizeof(word));
 			}
 			trim();
-			return *this;
+			return*this;
 		}
-		dynamic_bitset& operator>>=(size_t step)
+		dynamic_bitset& operator>>=(size_t s)
 		{
-			if (step >= m_size) return unset(), *this;
-			size_t word_shift = step / word_size, bit_shift = step % word_size;
-			if (!bit_shift)
+			if(s>=sz)return reset(),*this;
+			size_t ws=s/word_size,bt=s%word_size;
+			if(!bt)
 			{
-				memmove(m_data.data(), m_data.data() + word_shift, (word_count() - word_shift) * sizeof(word));
-				memset(m_data.data() + word_count() - word_shift, 0, word_shift * sizeof(word));
+				memmove(d.data(),d.data()+ws,(wc()-ws)*sizeof(word));
+				memset(d.data()+wc()-ws,0,ws*sizeof(word));
 			}
 			else
 			{
-				size_t remaining = word_count() - word_shift - 1;
-				word *destination = m_data.data(), *source = m_data.data() + word_shift;
-				__m128i r_shift = _mm_cvtsi32_si128(int(bit_shift)), l_shift = _mm_cvtsi32_si128(int(word_size - bit_shift));
-				while (remaining >= block_size)
+				size_t rem=wc()-ws-1;
+				word* dst=d.data(),* src=d.data()+ws;
+				__m128i rs=_mm_cvtsi32_si128(int(bt)),ls=_mm_cvtsi32_si128(int(word_size-bt));
+				while(rem>=block_size)
 				{
-					block low = _mm256_srl_epi64(_mm256_loadu_si256((const block*)&source[0]), r_shift);
-					block high = _mm256_sll_epi64(_mm256_loadu_si256((const block*)&source[1]), l_shift);
-					_mm256_storeu_si256((block*)destination, _mm256_or_si256(low, high));
-					destination += block_size, source += block_size;
-					remaining -= block_size;
+					block lo=_mm256_srl_epi64(_mm256_loadu_si256((const block*)&src[0]),rs);
+					block hi=_mm256_sll_epi64(_mm256_loadu_si256((const block*)&src[1]),ls);
+					_mm256_storeu_si256((block*)dst,_mm256_or_si256(lo,hi));
+					dst+=block_size,src+=block_size;
+					rem-=block_size;
 				}
-				while (remaining)
+				while(rem)
 				{
-					*destination = (source[0] >> bit_shift) | (source[1] << (word_size - bit_shift));
-					++destination, ++source;
-					--remaining;
+					*dst=(src[0]>>bt)|(src[1]<<(word_size-bt));
+					++dst,++src;
+					--rem;
 				}
-				*destination = *source >> bit_shift;
-				memset(m_data.data() + word_count() - word_shift, 0, word_shift * sizeof(word));
+				*dst=*src>>bt;
+				memset(d.data()+wc()-ws,0,ws*sizeof(word));
 			}
 			trim();
-			return *this;
+			return*this;
 		}
-		dynamic_bitset operator<<(size_t step) const
+		dynamic_bitset rotl(int s)const
 		{
-			dynamic_bitset result(m_size);
-			if (step >= m_size) return result;
-			size_t word_shift = step / word_size, bit_shift = step % word_size;
-			if (!bit_shift)
+			if(!sz)return*this;
+			size_t k=size_t(s<0?-int64_t(s):s)%sz;
+			if(!k)return*this;
+			if(s<0)k=sz-k;
+			return(*this<<k)|(*this>>(sz-k));
+		}
+		dynamic_bitset rotr(int s)const
+		{
+			if(!sz)return*this;
+			size_t k=size_t(s<0?-int64_t(s):s)%sz;
+			if(!k)return*this;
+			if(s<0)k=sz-k;
+			return(*this>>k)|(*this<<(sz-k));
+		}
+		dynamic_bitset operator<<(size_t s)const
+		{
+			dynamic_bitset res(sz);
+			if(s>=sz)return res;
+			size_t ws=s/word_size,bt=s%word_size;
+			if(!bt)
 			{
-				memcpy(result.m_data.data() + word_shift, m_data.data(), (word_count() - word_shift) * sizeof(word));
+				memcpy(res.d.data()+ws,d.data(),(wc()-ws)*sizeof(word));
 			}
 			else
 			{
-				size_t remaining = word_count() - word_shift - 1;
-				word* destination = result.m_data.data() + word_count();
-				const word* source = m_data.data() + word_count() - word_shift;
-				__m128i l_shift = _mm_cvtsi32_si128(int(bit_shift)), r_shift = _mm_cvtsi32_si128(int(word_size - bit_shift));
-				while (remaining >= block_size)
+				size_t rem=wc()-ws-1;
+				word* dst=res.d.data()+wc();
+				const word* src=d.data()+wc()-ws;
+				__m128i ls=_mm_cvtsi32_si128(int(bt)),rs=_mm_cvtsi32_si128(int(word_size-bt));
+				while(rem>=block_size)
 				{
-					destination -= block_size, source -= block_size;
-					block low = _mm256_srl_epi64(_mm256_loadu_si256((const block*)&source[-1]), r_shift);
-					block high = _mm256_sll_epi64(_mm256_loadu_si256((const block*)&source[0]), l_shift);
-					_mm256_storeu_si256((block*)destination, _mm256_or_si256(low, high));
-					remaining -= block_size;
+					dst-=block_size,src-=block_size;
+					block lo=_mm256_srl_epi64(_mm256_loadu_si256((const block*)&src[-1]),rs);
+					block hi=_mm256_sll_epi64(_mm256_loadu_si256((const block*)&src[0]),ls);
+					_mm256_storeu_si256((block*)dst,_mm256_or_si256(lo,hi));
+					rem-=block_size;
 				}
-				while (remaining)
+				while(rem)
 				{
-					--destination, --source;
-					*destination = (source[0] << bit_shift) | (source[-1] >> (word_size - bit_shift));
-					--remaining;
+					--dst,--src;
+					*dst=(src[0]<<bt)|(src[-1]>>(word_size-bt));
+					--rem;
 				}
-				*--destination = *--source << bit_shift;
+				*--dst=*--src<<bt;
 			}
-			result.trim();
-			return result;
+			res.trim();
+			return res;
 		}
-		dynamic_bitset operator>>(size_t step) const
+		dynamic_bitset operator>>(size_t s)const
 		{
-			dynamic_bitset result(m_size);
-			if (step >= m_size) return result;
-			size_t word_shift = step / word_size, bit_shift = step % word_size;
-			if (!bit_shift)
+			dynamic_bitset res(sz);
+			if(s>=sz)return res;
+			size_t ws=s/word_size,bt=s%word_size;
+			if(!bt)
 			{
-				memcpy(result.m_data.data(), m_data.data() + word_shift, (word_count() - word_shift) * sizeof(word));
+				memcpy(res.d.data(),d.data()+ws,(wc()-ws)*sizeof(word));
 			}
 			else
 			{
-				size_t remaining = word_count() - word_shift - 1;
-				word* destination = result.m_data.data();
-				const word* source = m_data.data() + word_shift;
-				__m128i r_shift = _mm_cvtsi32_si128(int(bit_shift)), l_shift = _mm_cvtsi32_si128(int(word_size - bit_shift));
-				while (remaining >= block_size)
+				size_t rem=wc()-ws-1;
+				word* dst=res.d.data();
+				const word* src=d.data()+ws;
+				__m128i rs=_mm_cvtsi32_si128(int(bt)),ls=_mm_cvtsi32_si128(int(word_size-bt));
+				while(rem>=block_size)
 				{
-					block low = _mm256_srl_epi64(_mm256_loadu_si256((const block*)&source[0]), r_shift);
-					block high = _mm256_sll_epi64(_mm256_loadu_si256((const block*)&source[1]), l_shift);
-					_mm256_storeu_si256((block*)destination, _mm256_or_si256(low, high));
-					destination += block_size, source += block_size;
-					remaining -= block_size;
+					block lo=_mm256_srl_epi64(_mm256_loadu_si256((const block*)&src[0]),rs);
+					block hi=_mm256_sll_epi64(_mm256_loadu_si256((const block*)&src[1]),ls);
+					_mm256_storeu_si256((block*)dst,_mm256_or_si256(lo,hi));
+					dst+=block_size,src+=block_size;
+					rem-=block_size;
 				}
-				while (remaining)
+				while(rem)
 				{
-					*destination = (source[0] >> bit_shift) | (source[1] << (word_size - bit_shift));
-					++destination, ++source;
-					--remaining;
+					*dst=(src[0]>>bt)|(src[1]<<(word_size-bt));
+					++dst,++src;
+					--rem;
 				}
-				*destination = *source >> bit_shift;
+				*dst=*src>>bt;
 			}
-			result.trim();
-			return result;
+			res.trim();
+			return res;
 		}
 	};
 }

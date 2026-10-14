@@ -1,6 +1,6 @@
 #ifndef SPONGE_CORE_HPP
 #define SPONGE_CORE_HPP
-#define SPONGELIB_VERSION "1.0.0"
+#define SPONGE_VERSION "1.0.0"
 #include<bits/stdc++.h>
 #include<cassert>
 namespace sponge

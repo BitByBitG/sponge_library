@@ -158,8 +158,8 @@ namespace sponge
 			}
 		};
 	}
-	using phi_sieve_=euler_sieve<int,detail::math2_phi_sieve_functor>;
-	using mu_sieve_=euler_sieve<int,detail::math2_mu_sieve_functor>;
+	using phi_sieve=euler_sieve<int,detail::math2_phi_sieve_functor>;
+	using mu_sieve=euler_sieve<int,detail::math2_mu_sieve_functor>;
 	template<typename T,typename ConvolutionPrefix,typename GPrefix>
 	class du_sieve
 	{

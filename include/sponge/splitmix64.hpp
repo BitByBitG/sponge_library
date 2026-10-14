@@ -44,7 +44,7 @@ namespace sponge
 			h^=_sm64(x+0x9e3779b97f4a7c15ULL+(h<<6)+(h>>2));
 		}
 		template<typename T>
-		inline ull hashing_byte_by_byte(const T& x)
+		inline ull hashing_bytes(const T& x)
 		{
 			ull h=0;
 			const unsigned char* p=reinterpret_cast<const unsigned char*>(&x);
@@ -54,7 +54,7 @@ namespace sponge
 		template<typename T,enable_if_t<is_trivial_v<T>&&!is_integral_v<T>&&!is_floating_point_v<T>,int> =0>
 		ull hashing(const T& x)
 		{
-			return hashing_byte_by_byte(x);
+			return hashing_bytes(x);
 		}
 		template<typename T,enable_if_t<is_integral_v<T>,int> =0>
 		ull hashing(T x)
@@ -75,7 +75,7 @@ namespace sponge
 			if constexpr(is_same_v<T,float>)return hashing(bit_cast<uint32_t>(x));
 			else if constexpr(is_same_v<T,double>)return hashing(bit_cast<uint64_t>(x));
 			else if constexpr(is_same_v<T,ld>)return hashing(static_cast<double>(x));
-			else return hashing_byte_by_byte(x);
+			else return hashing_bytes(x);
 		}
 		template<typename T1,typename T2>
 		ull hashing(const pair<T1,T2>& p)

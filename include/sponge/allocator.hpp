@@ -34,14 +34,12 @@ namespace sponge
 			using other=static_allocator<U>;
 		};
 		static_allocator()=default;
-		~static_allocator()
-		{
-			delete[] mempool;
-		}
+		~static_allocator()=default;
 		template<typename U>
 		static_allocator(const static_allocator<U>&){}
-		pointer allocate(size_type)
+		pointer allocate(size_type n)
 		{
+			if(n!=1)throw bad_alloc();
 			return alloc1();
 		}
 		void deallocate(pointer p,size_type)
@@ -51,17 +49,36 @@ namespace sponge
 		inline static T* mempool;
 		inline static int cap;
 		inline static int top;
+		inline static int live;
+	private:
+		struct pool_t
+		{
+			~pool_t()
+			{
+				if(mempool)allocator<T>{}.deallocate(mempool,cap);
+			}
+		};
+		inline static pool_t pool;
+	public:
 		inline static vector<int> stk;
 		static void expand(int n)
 		{
+			if(n<0||n>numeric_limits<int>::max()-10)throw length_error("Invalid capacity");
+			if(live)throw logic_error("Pool has live objects");
+			(void)pool;
 			n+=10;
-			mempool=new T[n];
+			T* p=allocator<T>{}.allocate(n);
+			if(mempool)allocator<T>{}.deallocate(mempool,cap);
+			mempool=p;
 			top=0;
 			cap=n;
+			stk.clear();
 		}
         static void expand_mb(int m)
         {
-            expand((ll)(m<<20)/sizeof(T));
+            if(m<0||((ll)m<<20)/sizeof(T)>numeric_limits<int>::max()-10)
+				throw length_error("Invalid capacity");
+			expand(((ll)m<<20)/sizeof(T));
         }
 		static int size()
 		{
@@ -81,14 +98,17 @@ namespace sponge
 			{
 				int x=stk.back();
 				stk.pop_back();
+				++live;
 				return pointer(x);
 			}
-			ASSERT(++top<cap);
-			return pointer(top);
+			if(top>=cap-1)throw bad_alloc();
+			++live;
+			return pointer(++top);
 		}
 		static void free1(pointer p)
 		{
 			stk.push_back(p.p);
+			--live;
 		}
 	};
 }

@@ -100,7 +100,7 @@ namespace sponge
 	template<typename T,typename F>
 	INLINE T binary_search_f1(T l,T r,F&& f)
 	{
-		return binary_search_f0(l,r,not_fn<F>(f));
+		return binary_search_f0(l,r,[&](T x){return !f(x);});
 	}
 	template<typename T,typename F>
 	INLINE T binary_search_l0(T l,T r,F&& f)

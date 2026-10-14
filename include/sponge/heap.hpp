@@ -28,35 +28,77 @@ namespace sponge
 			ptr_t fa,bro,son;
 			Key key;
 			constexpr node_t():fa(),bro(),son(),key(){}
+			constexpr node_t(const Key& v):fa(),bro(),son(),key(v){}
 		};
 		template<typename... Args>
 		static ptr_t alloc_node(Args&&... args)
 		{
 			ptr_t p=traits::allocate(alloc,1);
 			auto raw=to_address(p);
-			::new((void*)raw) node_t(forward<Args>(args)...);
+			try
+			{
+				::new((void*)raw) node_t(forward<Args>(args)...);
+			}
+			catch(...)
+			{
+				traits::deallocate(alloc,p,1);
+				throw;
+			}
 			return p;
 		}
 		static void dealloc_node(ptr_t p)
 		{
+			if(!p)return;
 			auto raw=to_address(p);
 			raw->~node_t();
 			traits::deallocate(alloc,p,1);
 		}
 		static void delete_tree(ptr_t& x)
 		{
-			if(x->son)delete_tree(x->son);
-			if(x->bro)delete_tree(x->bro);
-			dealloc_node(x);
-			x=nullptr;
+			while(x)
+			{
+				ptr_t p=x->bro;
+				if(x->son)
+				{
+					p=x->son;
+					ptr_t y=p;
+					while(y->bro)y=y->bro;
+					y->bro=x->bro;
+				}
+				dealloc_node(x);
+				x=p;
+			}
 		}
 		static ptr_t copy_tree(ptr_t x)
 		{
 			if(!x)return nullptr;
-			ptr_t y=alloc_node();
-			y->key=x->key;
-			if(y->bro=copy_tree(x->bro))y->bro->fa=y;
-			if(y->son=copy_tree(x->son))y->son->fa=y;
+			ptr_t y=alloc_node(x->key);
+			try
+			{
+				vector<pair<ptr_t,ptr_t>> st{{x,y}};
+				while(!st.empty())
+				{
+					auto[a,b]=st.back();
+					st.pop_back();
+					if(a->bro)
+					{
+						b->bro=alloc_node(a->bro->key);
+						b->bro->fa=b;
+						st.push_back({a->bro,b->bro});
+					}
+					if(a->son)
+					{
+						b->son=alloc_node(a->son->key);
+						b->son->fa=b;
+						st.push_back({a->son,b->son});
+					}
+				}
+			}
+			catch(...)
+			{
+				delete_tree(y);
+				throw;
+			}
 			return y;
 		}
 		static ptr_t merge(ptr_t x,ptr_t y)
@@ -72,13 +114,25 @@ namespace sponge
 		}
 		static ptr_t pairing_merge(ptr_t x)
 		{
-			if(!x)return nullptr;
-			x->fa=nullptr;
-			if(!x->bro)return x;
-			ptr_t y=x->bro,z=x->bro->bro;
-			y->fa=nullptr;
-			x->bro=y->bro=nullptr;
-			return merge(pairing_merge(z),merge(x,y));
+			ptr_t st=nullptr,ans=nullptr;
+			while(x)
+			{
+				ptr_t a=x,b=x->bro;
+				x=b?b->bro:nullptr;
+				a->fa=a->bro=nullptr;
+				if(b)b->fa=b->bro=nullptr;
+				ptr_t p=merge(a,b);
+				p->bro=st;
+				st=p;
+			}
+			while(st)
+			{
+				ptr_t p=st;
+				st=st->bro;
+				p->bro=nullptr;
+				ans=merge(p,ans);
+			}
+			return ans;
 		}
 		ptr_t root;
 	public:
@@ -113,16 +167,16 @@ namespace sponge
 		};
 		pairing_heap():root(){}
 		template<typename Iter>
-		pairing_heap(Iter first,Iter last):root()
+		pairing_heap(Iter first,Iter last):pairing_heap()
 		{
 			insert(first,last);
 		}
-		pairing_heap(const initializer_list<Key>& il):root()
+		pairing_heap(const initializer_list<Key>& il):pairing_heap()
 		{
 			insert(il);
 		}
-		pairing_heap(const pairing_heap& h)noexcept:root(copy_tree(h.root)){}
-		pairing_heap& operator=(const pairing_heap& h)noexcept
+		pairing_heap(const pairing_heap& h):root(copy_tree(h.root)){}
+		pairing_heap& operator=(const pairing_heap& h)
 		{
 			if(this!=&h)
 			{
@@ -158,9 +212,16 @@ namespace sponge
 		}
 		point_iterator push(const Key& v)
 		{
-			ptr_t x=alloc_node();
-			x->key=v;
-			root=merge(root,x);
+			ptr_t x=alloc_node(v);
+			try
+			{
+				root=merge(root,x);
+			}
+			catch(...)
+			{
+				dealloc_node(x);
+				throw;
+			}
 			return x;
 		}
 		point_iterator insert(const Key& v)
@@ -186,12 +247,14 @@ namespace sponge
 		}
 		void pop()
 		{
+			if(!root)return;
 			ptr_t tmp=pairing_merge(root->son);
 			dealloc_node(root);
 			root=tmp;
 		}
 		void join(pairing_heap& h)
 		{
+			if(this==&h)return;
 			root=merge(root,h.root);
 			h.root=nullptr;
 		}

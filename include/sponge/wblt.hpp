@@ -28,11 +28,20 @@ namespace sponge
 		{
 			ptr_t p=traits::allocate(alloc,1);
 			auto raw=to_address(p);
-			::new((void*)raw) node_t(forward<Args>(args)...);
+			try
+			{
+				::new((void*)raw) node_t(forward<Args>(args)...);
+			}
+			catch(...)
+			{
+				traits::deallocate(alloc,p,1);
+				throw;
+			}
 			return p;
 		}
 		static void dealloc_node(ptr_t p)
 		{
+			if(!p)return;
 			auto raw=to_address(p);
 			raw->~node_t();
 			traits::deallocate(alloc,p,1);
@@ -135,8 +144,18 @@ namespace sponge
 		{
 			if(!x)return nullptr;
 			ptr_t y=alloc_node(*x);
-			if((y->son[0]=copy_tree(x->son[0])))y->son[0]->fa=y;
-			if((y->son[1]=copy_tree(x->son[1])))y->son[1]->fa=y;
+			y->fa=nullptr;
+			y->son={};
+			try
+			{
+				if((y->son[0]=copy_tree(x->son[0])))y->son[0]->fa=y;
+				if((y->son[1]=copy_tree(x->son[1])))y->son[1]->fa=y;
+			}
+			catch(...)
+			{
+				delete_tree(y);
+				throw;
+			}
 			return y;
 		}
 		static void push_up(ptr_t x)
@@ -147,9 +166,18 @@ namespace sponge
 		static ptr_t _merge(ptr_t x,ptr_t y)
 		{
 			ptr_t z=alloc_node();
+			try
+			{
+				z->key=y->key;
+			}
+			catch(...)
+			{
+				dealloc_node(z);
+				throw;
+			}
 			set(z,0,x);
 			set(z,1,y);
-			push_up(z);
+			z->size=x->size+y->size;
 			return z;
 		}
 		static pair<ptr_t,ptr_t> _split(ptr_t& x)
@@ -201,16 +229,40 @@ namespace sponge
 		template<typename Fn>
 		static ptr_t _build(Fn&& fn,int l,int r)
 		{
+			if(l>r)return nullptr;
 			if(l==r)return alloc_node(node_t(fn(l)));
 			int mid=(l+r)>>1;
-			return _merge(_build(fn,l,mid),_build(fn,mid+1,r));
+			ptr_t a=_build(fn,l,mid),b=nullptr;
+			try
+			{
+				b=_build(fn,mid+1,r);
+				return _merge(a,b);
+			}
+			catch(...)
+			{
+				if(a)delete_tree(a);
+				if(b)delete_tree(b);
+				throw;
+			}
 		}
 		template<typename Iter>
 		static ptr_t _build(Iter l,Iter r)
 		{
+			if(l==r)return nullptr;
 			if(next(l)==r)return alloc_node(node_t(*l));
 			Iter mid=l+((r-l)>>1);
-			return _merge(_build(l,mid),_build(mid,r));
+			ptr_t a=_build(l,mid),b=nullptr;
+			try
+			{
+				b=_build(mid,r);
+				return _merge(a,b);
+			}
+			catch(...)
+			{
+				if(a)delete_tree(a);
+				if(b)delete_tree(b);
+				throw;
+			}
 		}
 		static ptr_t merge(ptr_t x,ptr_t y)
 		{
@@ -259,13 +311,24 @@ namespace sponge
 			if(x->size==1)
 			{
 				bool r=!cmp(v,x->key);
-				ptr_t tmp=x;
-				x=alloc_node();
+				ptr_t tmp=x,p=alloc_node(v),q=nullptr;
+				try
+				{
+					q=alloc_node();
+					q->key=r?p->key:tmp->key;
+				}
+				catch(...)
+				{
+					dealloc_node(p);
+					dealloc_node(q);
+					throw;
+				}
+				x=q;
 				x->fa=tmp->fa;
-				set(x,r,alloc_node(v));
+				set(x,r,p);
 				set(x,!r,tmp);
-				push_up(x);
-				return x->son[r];
+				x->size=2;
+				return p;
 			}
 			bool r=cmp(x->son[0]->key,v);
 			ptr_t ans=insert(x->son[r],v);
@@ -371,7 +434,7 @@ namespace sponge
 			}
 			ite_t operator++(int)
 			{
-				iterator it=*this;
+				ite_t it=*this;
 				++*this;
 				return it;
 			}
@@ -382,7 +445,7 @@ namespace sponge
 			}
 			ite_t operator--(int)
 			{
-				iterator it=*this;
+				ite_t it=*this;
 				--*this;
 				return it;
 			}
@@ -416,28 +479,28 @@ namespace sponge
 		}
 		template<typename Compare2,typename Alloc2>
 			requires(!is_same_v<Compare,Compare2>||!is_same_v<Alloc,Alloc2>)
-		wblt(wblt<Key,Compare2,Alloc2>& t):root(nullptr),guard(alloc_node())
+		wblt(wblt<Key,Compare2,Alloc2>& t):wblt()
 		{
 			guard->size=-1;
 			maintain_guard();
 			insert(t.begin(),t.end());
 		}
 		template<typename Iter>
-		wblt(Iter first,Iter last):root(nullptr),guard(alloc_node())
+		wblt(Iter first,Iter last):wblt()
 		{
 			guard->size=-1;
 			maintain_guard();
 			insert(first,last);
 		}
-		wblt(initializer_list<Key> il):root(nullptr),guard(alloc_node())
+		wblt(initializer_list<Key> il):wblt()
 		{
 			guard->size=-1;
 			maintain_guard();
 			insert(il);
 		}
-		wblt(const wblt& t):cmp(t.cmp),root(copy_tree(t.root)),guard(alloc_node())
+		wblt(const wblt& t):wblt(t.cmp)
 		{
-			guard->size=-1;
+			root=copy_tree(t.root);
 			maintain_guard();
 		}
 		wblt& operator=(const wblt& t)
@@ -576,12 +639,14 @@ namespace sponge
 		}
 		void simple_merge(wblt& t)
 		{
+			if(this==&t)return;
 			if(t.size()>size())swap(t);
 			insert(t.begin(),t.end());
 			t.clear();
 		}
 		void disjoint_merge(wblt& t)
 		{
+			if(this==&t)return;
 			if(t.empty())return;
 			if(empty())return swap(t);
 			if(!cmp(leftest_leaf(t.root)->key,root->key))root=merge(root,t.root);
@@ -635,6 +700,7 @@ namespace sponge
 	public:
 		void heuristic_merge(wblt& t)
 		{
+			if(this==&t)return;
 			ptr_t x=root,y=t.root;
 			root=hmerge(x,y);
 			maintain_guard();
@@ -664,8 +730,8 @@ namespace sponge
 		}
 		iterator find_by_order(int n)
 		{
+			if(n<0||n>=size())return end();
 			++n;
-			if(!n||n>size())return end();
 			return nth(root,n);
 		}
 		iterator predecessor(const Key& v)
