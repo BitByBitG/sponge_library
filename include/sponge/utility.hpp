@@ -14,16 +14,6 @@ namespace sponge
 	{
 		x=max(x,y);
 	}
-	template<typename FIte,typename Stream=istream>
-	void read_each(FIte first,FIte last,Stream& s=cin)
-	{
-		for(;first!=last;++first)s>>*first;
-	}
-	template<typename FIte,typename Separator=char,typename Stream=ostream>
-	void write_each(FIte first,FIte last,const Separator& sep=' ',Stream& s=cout)
-	{
-		for(;first!=last;++first)s<<*first<<sep;
-	}
 	enum cmp_op{_ls,_le,_eq,_ge,_gt,_ne};
 	template<typename T>
 	INLINE int sgn(T x)
@@ -80,37 +70,5 @@ namespace sponge
 		return to_address(p.operator->());
 	}
 #endif
-	template<typename T,typename F>
-	INLINE T binary_search_f0(T l,T r,F&& f)
-	{
-#if __cplusplus>=202002L
-		return *ranges::partition_point(views::iota(l,r),f);
-#else
-		T ans=r;
-		r--;
-		while(l<=r)
-		{
-			T mid=(l+r)>>1;
-			if(!f(mid))ans=mid,r=mid-1;
-			else l=mid+1;
-		}
-		return ans;
-#endif
-	}
-	template<typename T,typename F>
-	INLINE T binary_search_f1(T l,T r,F&& f)
-	{
-		return binary_search_f0(l,r,[&](T x){return !f(x);});
-	}
-	template<typename T,typename F>
-	INLINE T binary_search_l0(T l,T r,F&& f)
-	{
-		return binary_search_f1(l,r,f)-1;
-	}
-	template<typename T,typename F>
-	INLINE T binary_search_l1(T l,T r,F&& f)
-	{
-		return binary_search_f0(l,r,f)-1;
-	}
 }
 #endif

@@ -39,7 +39,10 @@ namespace sponge
 				}while(m>1);
 				a.assign(total,0);
 			}
-			bool contains(size_t x)const{return (a[x>>6]>>(x&63))&1;}
+			bool contains(size_t x)const
+			{
+				return (a[x>>6]>>(x&63))&1;
+			}
 			void insert(size_t x)
 			{
 				for(int i=0;i<n;i++)
@@ -147,9 +150,18 @@ namespace sponge
 		{
 			return x>=0&&(w==numeric_limits<T>::digits||(x>>w)==0);
 		}
-		static T high(ptr_t p,T x){return x>>p->k;}
-		static T low(ptr_t p,T x){return x&((T(1)<<p->k)-1);}
-		static T index(ptr_t p,T h,T l){return (h<<p->k)|l;}
+		static T high(ptr_t p,T x)
+		{
+			return x>>p->k;
+		}
+		static T low(ptr_t p,T x)
+		{
+			return x&((T(1)<<p->k)-1);
+		}
+		static T index(ptr_t p,T h,T l)
+		{
+			return (h<<p->k)|l;
+		}
 		static ptr_t child(ptr_t p,T h)
 		{
 			if(!p->cluster)return nullptr;
@@ -326,7 +338,10 @@ namespace sponge
 		{
 			if(w<1||w>numeric_limits<T>::digits)throw invalid_argument("Invalid bit width");
 		}
-		~veb_tree(){delete_tree(root);}
+		~veb_tree()
+		{
+			delete_tree(root);
+		}
 		veb_tree(const veb_tree&)=delete;
 		veb_tree& operator=(const veb_tree&)=delete;
 		veb_tree(veb_tree&& t)noexcept:root(t.root),w(t.w){t.root=nullptr;}
@@ -341,11 +356,27 @@ namespace sponge
 			}
 			return *this;
 		}
-		void clear(){delete_tree(root);root=nullptr;}
-		bool empty()const{return !root;}
-		T min()const{return root?root->mn:T(-1);}
-		T max()const{return root?root->mx:T(-1);}
-		bool contains(T x)const{return valid(x)&&contains(root,x);}
+		void clear()
+		{
+			delete_tree(root);
+			root=nullptr;
+		}
+		bool empty()const
+		{
+			return !root;
+		}
+		T min()const
+		{
+			return root?root->mn:T(-1);
+		}
+		T max()const
+		{
+			return root?root->mx:T(-1);
+		}
+		bool contains(T x)const
+		{
+			return valid(x)&&contains(root,x);
+		}
 		bool insert(T x)
 		{
 			if(!valid(x)||contains(root,x))return false;
@@ -366,8 +397,14 @@ namespace sponge
 			if(root->mn==-1)clear();
 			return true;
 		}
-		T successor(T x)const{return successor(root,x);}
-		T predecessor(T x)const{return predecessor(root,x);}
+		T successor(T x)const
+		{
+			return successor(root,x);
+		}
+		T predecessor(T x)const
+		{
+			return predecessor(root,x);
+		}
 	};
 }
 #endif
