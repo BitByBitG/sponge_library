@@ -2,6 +2,7 @@
 #define SPONGE_WBLT_HPP
 #include<sponge/core.hpp>
 #include<sponge/utility.hpp>
+#include<iterator>
 namespace sponge
 {
 	template<typename Key,typename Compare=less<Key>,typename Alloc=allocator<Key>>
@@ -411,8 +412,7 @@ namespace sponge
 			return pos;
 		}
 	public:
-		template<bool is_reverse=0>
-		class ite_t
+		class iterator
 		{
 		public:
 			ptr_t p;
@@ -421,39 +421,37 @@ namespace sponge
 			using difference_type=ptrdiff_t;
 			using pointer=Key*;
 			using reference=Key&;
-			constexpr ite_t():p(nullptr){}
-			constexpr ite_t(ptr_t _p):p(_p){}
+			constexpr iterator():p(nullptr){}
+			constexpr iterator(ptr_t _p):p(_p){}
 			ptr_t& raw()
 			{
 				return p;
 			}
-			ite_t& operator++()
+			iterator& operator++()
 			{
-				if constexpr(is_reverse)return p=prev_leaf(p),*this;
-				else return p=next_leaf(p),*this;
+				return p=next_leaf(p),*this;
 			}
-			ite_t operator++(int)
+			iterator operator++(int)
 			{
-				ite_t it=*this;
+				iterator it=*this;
 				++*this;
 				return it;
 			}
-			ite_t& operator--()
+			iterator& operator--()
 			{
-				if constexpr(is_reverse)return p=next_leaf(p),*this;
-				else return p=prev_leaf(p),*this;
+				return p=prev_leaf(p),*this;
 			}
-			ite_t operator--(int)
+			iterator operator--(int)
 			{
-				ite_t it=*this;
+				iterator it=*this;
 				--*this;
 				return it;
 			}
-			bool operator==(const ite_t& x)const
+			bool operator==(const iterator& x)const
 			{
 				return p==x.p;
 			}
-			bool operator!=(const ite_t& x)const
+			bool operator!=(const iterator& x)const
 			{
 				return p!=x.p;
 			}
@@ -466,8 +464,7 @@ namespace sponge
 				return &p->key;
 			}
 		};
-		using iterator=ite_t<0>;
-		using reverse_iterator=ite_t<1>;
+		using reverse_iterator=std::reverse_iterator<iterator>;
 	private:
 		ptr_t root,guard;
 	public:
@@ -477,8 +474,7 @@ namespace sponge
 			guard->size=-1;
 			maintain_guard();
 		}
-		template<typename Compare2,typename Alloc2>
-			requires(!is_same_v<Compare,Compare2>||!is_same_v<Alloc,Alloc2>)
+		template<typename Compare2,typename Alloc2,enable_if_t<!is_same_v<Compare,Compare2>||!is_same_v<Alloc,Alloc2>,int> =0>
 		wblt(wblt<Key,Compare2,Alloc2>& t):wblt()
 		{
 			guard->size=-1;
@@ -549,11 +545,11 @@ namespace sponge
 		}
 		reverse_iterator rbegin()
 		{
-			return root?rightest_leaf(root):guard;
+			return reverse_iterator(end());
 		}
 		reverse_iterator rend()
 		{
-			return guard;
+			return reverse_iterator(begin());
 		}
 		iterator root_iterator()
 		{

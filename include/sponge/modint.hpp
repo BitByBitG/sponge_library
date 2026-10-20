@@ -250,11 +250,11 @@ namespace sponge
 		}
 	};
 	template<typename T=uint32_t,int id=1,bool is_prime=1>
-	class dynamic_modint:public combinatorics<static_modint<T,id,is_prime>>
+	class dynamic_modint:public combinatorics<dynamic_modint<T,id,is_prime>>
 	{
 	public:
 		T x;
-		using _c=combinatorics<static_modint<T,id,is_prime>>;
+		using _c=combinatorics<dynamic_modint<T,id,is_prime>>;
 		inline static barrett64<> reduction{};
 		using _c::initialize,_c::inv,_c::fact,_c::ifact,_c::comb,_c::perm;
 		using value_type=T;

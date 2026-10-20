@@ -217,43 +217,99 @@ namespace sponge
 		zero_t<T>,min_t<T>,plus<T>
 	>;
 	template<typename Mat>
-	pair<bool,vector<typename Mat::value_type>> gauss(Mat a)
+	bool gauss(Mat& a,vector<typename Mat::value_type>* b=nullptr)
 	{
-		bool feasible=1;
-		using T=Mat::value_type;
-		int n=a.n,m=a.m;
-		ASSERT(m==n+1);
+		using T=typename Mat::value_type;
+		using std::abs;
+		int n=a.n;
+		ASSERT(a.m==n);
+		ASSERT(!b||int(b->size())==n);
+		int r=0;
+		for(int i=0;i<n;i++)
+		{
+			int pivot=r;
+			if constexpr(std::is_floating_point_v<T>)
+			{
+				for(int j=r+1;j<n;j++)
+					if(std::abs(a[j][i])>std::abs(a[pivot][i]))
+						pivot=j;
+				if(std::abs(a[pivot][i])<eps<T>)
+				{
+					for(int j=r;j<n;j++)a[j][i]=0;
+					continue;
+				}
+			}
+			else
+			{
+				while(pivot<n&&a[pivot][i]==T(0))pivot++;
+				if(pivot==n)continue;
+			}
+			swap(a[r],a[pivot]);
+			if(b)swap((*b)[r],(*b)[pivot]);
+			T div=a[r][i];
+			a[r][i]=1;
+			for(int j=i+1;j<n;j++)a[r][j]/=div;
+			if(b)(*b)[r]/=div;
+			for(int j=r+1;j<n;j++)
+			{
+				div=a[j][i];
+				a[j][i]=0;
+				for(int k=i+1;k<n;k++)
+					a[j][k]-=a[r][k]*div;
+				if(b)(*b)[j]-=(*b)[r]*div;
+			}
+			r++;
+		}
+		return r==n;
+	}
+	template<typename Mat>
+	pair<bool,vector<typename Mat::value_type>> gauss_solve(Mat a,vector<typename Mat::value_type> b)
+	{
+		if(!gauss(a,&b))return {false,{}};
+		int n=a.n;
+		for(int i=n-1;i>=0;i--)
+			for(int j=i+1;j<n;j++)
+				b[i]-=a[i][j]*b[j];
+		return {true,std::move(b)};
+	}
+	template<typename Mat>
+	typename Mat::value_type det(Mat a)
+	{
+		using T=typename Mat::value_type;
+		using std::abs;
+		int n=a.n;
+		ASSERT(a.m==n);
+		T ans=1;
 		for(int i=0;i<n;i++)
 		{
 			int pivot=i;
-			for(int j=i+1;j<n;j++)
-				if(abs(a[j][i])>abs(a[pivot][i]))
-					pivot=j;
-			if(abs(a[pivot][i])<eps<T>)
+			if constexpr(std::is_floating_point_v<T>)
 			{
-				feasible=0;
-				continue;
+				for(int j=i+1;j<n;j++)
+					if(std::abs(a[j][i])>std::abs(a[pivot][i]))
+						pivot=j;
+				if(std::abs(a[pivot][i])<eps<T>)return T(0);
 			}
-			swap(a[i],a[pivot]);
-			ld div=a[i][i];
-			for(int j=i;j<n+1;j++)
-				a[i][j]/=div;
+			else
+			{
+				while(pivot<n&&a[pivot][i]==T(0))pivot++;
+				if(pivot==n)return T(0);
+			}
+			if(pivot!=i)
+			{
+				swap(a[i],a[pivot]);
+				ans=-ans;
+			}
+			ans*=a[i][i];
 			for(int j=i+1;j<n;j++)
 			{
-				div=a[j][i];
-				for(int k=i;k<n+1;k++)
+				T div=a[j][i]/a[i][i];
+				a[j][i]=0;
+				for(int k=i+1;k<n;k++)
 					a[j][k]-=a[i][k]*div;
 			}
 		}
-		vector<T> x(n);
-		x[n-1]=a[n-1][n];
-		for(int i=n-2;i>=0;i--)
-		{
-			x[i]=a[i][n];
-			for(int j=i+1;j<n;j++)
-				x[i]-=a[i][j]*x[j];
-		}
-		return {feasible,x};
+		return ans;
 	}
 }
 #endif
