@@ -10,6 +10,7 @@
 #include<sponge/ptree.hpp>
 #include<sponge/satt.hpp>
 #include<sponge/wblt.hpp>
+#include<sponge/rbt.hpp>
 #include<sponge/heap.hpp>
 #include<sponge/bitset.hpp>
 #include<sponge/sparse_table.hpp>

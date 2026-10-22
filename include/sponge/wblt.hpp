@@ -760,11 +760,11 @@ namespace sponge
 		}
 		int count(const Key& v)
 		{
-			return rank(upper_bound(v).p)-order_of_key(v);
+			return rank(upper_bound(v).p)-order_of_key(v)-1;
 		}
 		int count(const Key& l,const Key& r)
 		{
-			return rank(upper_bound(r).p)-order_of_key(l);
+			return rank(upper_bound(r).p)-order_of_key(l)-1;
 		}
 		wblt split(int k)
 		{

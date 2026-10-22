@@ -2,6 +2,7 @@
 #define SPONGE_LINEAR_PROGRAMMING_HPP
 #include<sponge/core.hpp>
 #include<sponge/type_traits.hpp>
+#include<sponge/utility.hpp>
 namespace sponge
 {
 	enum lp_ret
@@ -9,12 +10,6 @@ namespace sponge
 		lp_infeasible,
 		lp_unbounded,
 		lp_optimal
-	};
-	enum lp_op
-	{
-		lp_le,
-		lp_eq,
-		lp_ge
 	};
 	template<typename T=ld>
 	class lp
@@ -43,15 +38,15 @@ namespace sponge
 			a.reserve(_m);
 			b.reserve(_m);
 		}
-		template<lp_op op=lp_le>
+		template<cmp_op op=cmp_le>
 		void constraint(vector<T> _a,T _b)
 		{
-			if constexpr(op==lp_le||op==lp_eq)
+			if constexpr(op==cmp_le||op==cmp_eq)
 			{
 				a.push_back(_a);
 				b.push_back(_b);
 			}
-			if constexpr(op==lp_ge||op==lp_eq)
+			if constexpr(op==cmp_ge||op==cmp_eq)
 			{
 				for(auto& i:_a)i=-i;
 				_b=-_b;

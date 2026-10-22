@@ -14,7 +14,7 @@ namespace sponge
 	{
 		x=max(x,y);
 	}
-	enum cmp_op{_ls,_le,_eq,_ge,_gt,_ne};
+	enum cmp_op{cmp_lt,cmp_le,cmp_eq,cmp_ge,cmp_gt,cmp_ne};
 	template<typename T>
 	INLINE int sgn(T x)
 	{
@@ -27,7 +27,7 @@ namespace sponge
 		T d=x-y;
 		return d<-e?-1:(d>e?1:0);
 	}
-	template<cmp_op op=_ls,bool absolute=1,typename T>
+	template<cmp_op op=cmp_lt,bool absolute=1,typename T>
 	INLINE bool cmp(T x,T y)
 	{
 		int d;
@@ -35,12 +35,12 @@ namespace sponge
 		else d=sgnr(x,y);
 		switch(op)
 		{
-		case _ls:return d<0;
-		case _le:return d<=0;
-		case _eq:return d==0;
-		case _ge:return d>=0;
-		case _gt:return d>0;
-		case _ne:return d!=0;
+		case cmp_lt:return d<0;
+		case cmp_le:return d<=0;
+		case cmp_eq:return d==0;
+		case cmp_ge:return d>=0;
+		case cmp_gt:return d>0;
+		case cmp_ne:return d!=0;
 		}
 	}
 	template<typename T>

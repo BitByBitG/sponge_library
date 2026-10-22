@@ -122,11 +122,11 @@ namespace sponge
 			return ans;
 		}
 	};
-	template<typename Value=ll>
+	template<typename T=ll>
 	class weighted_blossom
 	{
 	public:
-		using value_type=Value;
+		using value_type=T;
 		weighted_blossom(){}
 		weighted_blossom(int n)
 		{
@@ -135,24 +135,24 @@ namespace sponge
 		struct edge_t
 		{
 			int u,v;
-			Value w;
+			T w;
 			edge_t(){}
-			edge_t(int u,int v,Value w):u(u),v(v),w(w){}
+			edge_t(int u,int v,T w):u(u),v(v),w(w){}
 		};
 		int n,n_x;
 		vector<vector<edge_t>> g;
 		vector<vector<int>> flower;
 		vector<int> root;
 		vector<vector<int>> flower_from;
-		vector<Value> label;
+		vector<T> label;
 		vector<int> col;
 		vector<int> slack;
 		vector<int> mat;
 		vector<int> fa;
 		vector<int> vis;
 		queue<int> que;
-		vector<pair<Value,pair<int,int>>> edges;
-		void link(int x,int y,const Value &w)
+		vector<pair<T,pair<int,int>>> edges;
+		void link(int x,int y,const T &w)
 		{
 			edges.push_back({w,{x,y}});
 		}
@@ -173,7 +173,7 @@ namespace sponge
 			fa.resize(n);
 			vis.resize(n);
 		}
-		inline Value calc_slack(edge_t e)
+		inline T calc_slack(edge_t e)
 		{
 			return label[e.u]+label[e.v]-e.w;
 		}
@@ -346,12 +346,12 @@ namespace sponge
 					for(int i=1;i<=n;i++)
 					{
 						if(g[p][i].w==0||root[i]==root[p])continue;
-						Value d=calc_slack(g[p][i]);
+						T d=calc_slack(g[p][i]);
 						if(!d){if(augment_path(g[p][i]))return 1;}
 						else if(col[root[i]]!=2)update_slack(p,root[i]);
 					}
 				}
-				Value delta=inf<Value>;
+				T delta=inf<T>;
 				for(int i=1;i<=n;i++)if(col[root[i]]==1)delta=min(delta,label[i]);
 				for(int i=n+1;i<=n_x;i++)if(root[i]==i&&col[i]==2)delta=min(delta,label[i]/2);
 				for(int i=1;i<=n_x;i++)
@@ -401,11 +401,11 @@ namespace sponge
 					g[i][j]=edge_t(i,j,0);
 				}
 			}
-			Value w_max=0;
+			T w_max=0;
 			for(auto pr:edges)
 			{
 				int u=pr.second.first,v=pr.second.second;
-				Value w=pr.first;
+				T w=pr.first;
 				g[u][v]=edge_t(u,v,w*2);
 				g[v][u]=edge_t(v,u,w*2);
 				w_max=max(w_max,w);
@@ -416,11 +416,11 @@ namespace sponge
 		{
 			*this=weighted_blossom();
 		}
-		pair<int,Value> matching()
+		pair<int,T> matching()
 		{
 			init();
 			int cnt=0;
-			Value s=0;
+			T s=0;
 			while(augment())++cnt;
 			for(int i=1;i<=n;i++)if(mat[i]>i)s+=g[i][mat[i]].w/2;
 			return make_pair(cnt,s);

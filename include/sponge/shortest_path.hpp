@@ -114,13 +114,15 @@ namespace sponge
 		{
 			return dijkstra(vector<int>({s}));
 		}
-		vector<T> spfa(const vector<int>& s)
+		optional<vector<T>> spfa(const vector<int>& s)
 		{
 			vector<T> dis(v+1,inf<T>);
+			vector<int> cnt(v+1);
 			vector<char> vis(v+1);
 			deque<int> dq;
 			for(int x:s)
 			{
+				if(vis[x])continue;
 				dis[x]=0;
 				vis[x]=1;
 				dq.push_back(x);
@@ -135,6 +137,8 @@ namespace sponge
 					if(dis[y]>dis[x]+w)
 					{
 						dis[y]=dis[x]+w;
+						cnt[y]=cnt[x]+1;
+						if(cnt[y]>=v)return nullopt;
 						if(!vis[y])
 						{
 							dq.push_back(y);
@@ -145,9 +149,15 @@ namespace sponge
 			}
 			return dis;
 		}
-		vector<T> spfa(int s)
+		pair<bool,vector<T>> spfa(int s)
 		{
 			return spfa(vector<int>({s}));
+		}
+		pair<bool,vector<T>> spfa()
+		{
+			vector<int> s(v);
+			iota(s.begin(),s.end(),1);
+			return spfa(s);
 		}
 	};
 }

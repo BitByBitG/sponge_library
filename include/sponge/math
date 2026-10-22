@@ -7,6 +7,5 @@
 #include<sponge/polynomial.hpp>
 #include<sponge/matrix.hpp>
 #include<sponge/linear_programming.hpp>
-#include<sponge/two_sat.hpp>
 
 #endif

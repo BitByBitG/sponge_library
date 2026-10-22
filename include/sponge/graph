@@ -10,5 +10,7 @@
 #include<sponge/blossom.hpp>
 #include<sponge/k_shortest_walk.hpp>
 #include<sponge/max_independent_set.hpp>
+#include<sponge/difference_constraints.hpp>
+#include<sponge/two_sat.hpp>
 
 #endif
