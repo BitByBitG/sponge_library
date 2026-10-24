@@ -30,59 +30,61 @@ namespace sponge
 			int path_size,subtree_size;
 			S val,path_val,subtree_val;
 			T path_tag,subtree_tag;
-			node_t():
+			node_t():node_t(M{}){}
+			node_t(const M& m):
 				fa(0),son{0,0,0},
 				rev(0),path_size(0),subtree_size(0),
-				val(s_id()),path_val(s_id()),subtree_val(s_id()),
-				path_tag(t_id()),subtree_tag(t_id()){}
+				val(m.s_id()),path_val(m.s_id()),subtree_val(m.s_id()),
+				path_tag(m.t_id()),subtree_tag(m.t_id()){}
 		};
-		vector<node_t> tr;
+		vector<node_t> nd;
 		vector<int> stk;
-		satt()
+		satt():satt(M{}){}
+		explicit satt(const M& m):M(m)
 		{
-			tr.push_back(node_t());
+			nd.push_back(node_t(*this));
 		}
-		satt(int n)
+		satt(int n):satt(n,M{}){}
+		satt(int n,const M& m):satt(m)
 		{
-			tr.push_back(node_t());
 			resize(n);
 		}
 		void resize(int n)
 		{
-			tr.resize(n+1);
+			nd.resize(n+1,node_t(*this));
 		}
 		void reserve(int n)
 		{
-			tr.reserve(n+1);
+			nd.reserve(n+1);
 		}
 		void clear()
 		{
-			tr.resize(1);
+			nd.resize(1);
 			stk.clear();
 		}
 		node_t& operator[](int x)
 		{
-			return tr[x];
+			return nd[x];
 		}
 		INLINE int& fa(const int x)
 		{
-			return tr[x].fa;
+			return nd[x].fa;
 		}
 		INLINE int& ls(const int x)
 		{
-			return tr[x].son[0];
+			return nd[x].son[0];
 		}
 		INLINE int& rs(const int x)
 		{
-			return tr[x].son[1];
+			return nd[x].son[1];
 		}
 		INLINE int& ms(const int x)
 		{
-			return tr[x].son[2];
+			return nd[x].son[2];
 		}
 		inline S& value(const int x)
 		{
-			return tr[x].val;
+			return nd[x].val;
 		}
 		int new_node()
 		{
@@ -94,13 +96,13 @@ namespace sponge
 			}
 			else
 			{
-				tr.push_back(node_t());
-				return tr.size()-1;
+				nd.push_back(node_t(*this));
+				return nd.size()-1;
 			}
 		}
 		void delete_node(int x)
 		{
-			tr[x]=node_t();
+			nd[x]=node_t(*this);
 			stk.push_back(x);
 		}
 		inline bool dir(const int x)
@@ -114,26 +116,26 @@ namespace sponge
 		void setf(const int x,const int f,const int d)
 		{
 			if(x)fa(x)=f;
-			if(f)tr[f].son[d]=x;
+			if(f)nd[f].son[d]=x;
 		}
 		void reverse(const int x)
 		{
 			if(!x)return;
 			swap(ls(x),rs(x));
-			tr[x].rev^=1;
+			nd[x].rev^=1;
 		}
 		void apply_path_tag(int x,t_cr t)
 		{
 			if(!x)return;
-			tr[x].val=s_op_s_t(tr[x].val,t,1);
-			tr[x].path_val=s_op_s_t(tr[x].path_val,t,tr[x].path_size);
-			tr[x].path_tag=t_op_t_t(tr[x].path_tag,t);
+			nd[x].val=s_op_s_t(nd[x].val,t,1);
+			nd[x].path_val=s_op_s_t(nd[x].path_val,t,nd[x].path_size);
+			nd[x].path_tag=t_op_t_t(nd[x].path_tag,t);
 		}
 		void apply_subtree_tag(int x,t_cr t)
 		{
 			if(!x)return;
-			tr[x].subtree_val=s_op_s_t(tr[x].subtree_val,t,tr[x].subtree_size);
-			tr[x].subtree_tag=t_op_t_t(tr[x].subtree_tag,t);
+			nd[x].subtree_val=s_op_s_t(nd[x].subtree_val,t,nd[x].subtree_size);
+			nd[x].subtree_tag=t_op_t_t(nd[x].subtree_tag,t);
 		}
 		template<satt_cluster type>
 		void push_up(int x)
@@ -141,14 +143,14 @@ namespace sponge
 			switch(type)
 			{
 				case satt_compress:
-					tr[x].path_size=tr[ls(x)].path_size+1+tr[rs(x)].path_size;
-					tr[x].subtree_size=tr[ls(x)].subtree_size+tr[rs(x)].subtree_size+tr[ms(x)].subtree_size;
-					tr[x].path_val=s_op_s_s(s_op_s_s(tr[ls(x)].path_val,tr[x].val),tr[rs(x)].path_val);
-					tr[x].subtree_val=s_op_s_s(s_op_s_s(tr[ls(x)].subtree_val,tr[rs(x)].subtree_val),tr[ms(x)].subtree_val);
+					nd[x].path_size=nd[ls(x)].path_size+1+nd[rs(x)].path_size;
+					nd[x].subtree_size=nd[ls(x)].subtree_size+nd[rs(x)].subtree_size+nd[ms(x)].subtree_size;
+					nd[x].path_val=s_op_s_s(s_op_s_s(nd[ls(x)].path_val,nd[x].val),nd[rs(x)].path_val);
+					nd[x].subtree_val=s_op_s_s(s_op_s_s(nd[ls(x)].subtree_val,nd[rs(x)].subtree_val),nd[ms(x)].subtree_val);
 					break;
 				case satt_rake:
-					tr[x].subtree_size=tr[ls(x)].subtree_size+tr[rs(x)].subtree_size+tr[ms(x)].subtree_size+tr[ms(x)].path_size;
-					tr[x].subtree_val=s_op_s_s(s_op_s_s(s_op_s_s(tr[ls(x)].subtree_val,tr[rs(x)].subtree_val),tr[ms(x)].subtree_val),tr[ms(x)].path_val);
+					nd[x].subtree_size=nd[ls(x)].subtree_size+nd[rs(x)].subtree_size+nd[ms(x)].subtree_size+nd[ms(x)].path_size;
+					nd[x].subtree_val=s_op_s_s(s_op_s_s(s_op_s_s(nd[ls(x)].subtree_val,nd[rs(x)].subtree_val),nd[ms(x)].subtree_val),nd[ms(x)].path_val);
 			}
 		}
 		template<satt_cluster type>
@@ -157,34 +159,34 @@ namespace sponge
 			switch(type)
 			{
 				case satt_compress:
-					if(tr[x].rev)
+					if(nd[x].rev)
 					{
 						reverse(ls(x));
 						reverse(rs(x));
-						tr[x].rev=0;
+						nd[x].rev=0;
 					}
-					if(!is_t_id(tr[x].path_tag))
+					if(!is_t_id(nd[x].path_tag))
 					{
-						apply_path_tag(ls(x),tr[x].path_tag);
-						apply_path_tag(rs(x),tr[x].path_tag);
-						tr[x].path_tag=t_id();
+						apply_path_tag(ls(x),nd[x].path_tag);
+						apply_path_tag(rs(x),nd[x].path_tag);
+						nd[x].path_tag=t_id();
 					}
-					if(!is_t_id(tr[x].subtree_tag))
+					if(!is_t_id(nd[x].subtree_tag))
 					{
-						apply_subtree_tag(ls(x),tr[x].subtree_tag);
-						apply_subtree_tag(rs(x),tr[x].subtree_tag);
-						apply_subtree_tag(ms(x),tr[x].subtree_tag);
-						tr[x].subtree_tag=t_id();
+						apply_subtree_tag(ls(x),nd[x].subtree_tag);
+						apply_subtree_tag(rs(x),nd[x].subtree_tag);
+						apply_subtree_tag(ms(x),nd[x].subtree_tag);
+						nd[x].subtree_tag=t_id();
 					}
 					break;
 				case satt_rake:
-					if(!is_t_id(tr[x].subtree_tag))
+					if(!is_t_id(nd[x].subtree_tag))
 					{
-						apply_subtree_tag(ls(x),tr[x].subtree_tag);
-						apply_subtree_tag(rs(x),tr[x].subtree_tag);
-						apply_subtree_tag(ms(x),tr[x].subtree_tag);
-						apply_path_tag(ms(x),tr[x].subtree_tag);
-						tr[x].subtree_tag=t_id();
+						apply_subtree_tag(ls(x),nd[x].subtree_tag);
+						apply_subtree_tag(rs(x),nd[x].subtree_tag);
+						apply_subtree_tag(ms(x),nd[x].subtree_tag);
+						apply_path_tag(ms(x),nd[x].subtree_tag);
+						nd[x].subtree_tag=t_id();
 					}
 			}
 		}
@@ -197,11 +199,11 @@ namespace sponge
 		template<satt_cluster type>
 		void rotate(int x)
 		{
-			int f=fa(x),g=fa(f),d=dir(x),y=tr[x].son[!d];
-			if(g)tr[g].son[ms(g)==f?2:dir(f)]=x;
+			int f=fa(x),g=fa(f),d=dir(x),y=nd[x].son[!d];
+			if(g)nd[g].son[ms(g)==f?2:dir(f)]=x;
 			if(y)fa(y)=f;
-			fa(x)=g,tr[x].son[!d]=f;
-			fa(f)=x,tr[f].son[d]=y;
+			fa(x)=g,nd[x].son[!d]=f;
+			fa(f)=x,nd[f].son[d]=y;
 			push_up<type>(f);push_up<type>(x);
 		}
 		template<satt_cluster type>
@@ -338,7 +340,7 @@ namespace sponge
 			int root=find(x);
 			access(x);
 			apply_subtree_tag(ms(x),t);
-			tr[x].val=s_op_s_t(tr[x].val,t,1);
+			nd[x].val=s_op_s_t(nd[x].val,t,1);
 			push_up<satt_compress>(x);
 			set_root(root);
 		}
@@ -346,7 +348,7 @@ namespace sponge
 		{
 			int root=find(x);
 			expose(x,y);
-			S res=tr[y].path_val;
+			S res=nd[y].path_val;
 			set_root(root);
 			return res;
 		}
@@ -358,7 +360,7 @@ namespace sponge
 		{
 			int root=find(x);
 			access(x);
-			S res=s_op_s_s(tr[ms(x)].subtree_val,tr[x].val);
+			S res=s_op_s_s(nd[ms(x)].subtree_val,nd[x].val);
 			set_root(root);
 			return res;
 		}

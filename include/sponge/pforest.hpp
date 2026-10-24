@@ -15,7 +15,7 @@ namespace sponge
 	public:
 		using Sz=SizeType;
 		using size_type=Sz;
-		using M=double_monoid<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT>;
+		using M=double_monoid<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT,SizeType>;
 		using M::s_id,M::t_id,M::is_t_id,M::s_op_s_s,M::s_op_s_t,M::t_op_t_t;
 		using s_cr=typename M::s_cr;
 		using t_cr=typename M::t_cr;
@@ -34,7 +34,8 @@ namespace sponge
 			T tag;
 #endif
 			int ref;
-			node_t():
+			node_t():node_t(M{}){}
+			node_t(const M& m):
 #ifdef SPONGE_PTREE_FA
 				fa(),
 #endif
@@ -42,28 +43,37 @@ namespace sponge
 #ifndef SPONGE_PTREE_NREV
 				rev(),
 #endif
-				val(s_id()),
+				val(m.s_id()),
 #ifndef SPONGE_PTREE_NTAG
-				tag(t_id()),
+				tag(m.t_id()),
 #endif
 				ref()
 			{}
 		};
 		int n,cap;
-		node_t* tr;
+		node_t* nd;
 		vector<int> stk;
-		pforest():n(0),cap(0),tr(nullptr){}
-		pforest(int _cap):tr(nullptr)
+		pforest():pforest(M{}){}
+		explicit pforest(const M& m):M(m),n(0),cap(0),nd(nullptr){}
+		pforest(int _cap):pforest(_cap,M{}){}
+		pforest(int _cap,const M& m):pforest(m)
 		{
 			reserve(_cap);
 		}
+		void destroy_nodes()
+		{
+			if(!nd)return;
+			for(int i=0;i<cap;i++)nd[i].~node_t();
+			allocator<node_t>{}.deallocate(nd,cap);
+			nd=nullptr;
+		}
 		~pforest()
 		{
-			delete[] tr;
+			destroy_nodes();
 		}
 		node_t& operator[](int x)
 		{
-			return tr[x];
+			return nd[x];
 		}
 		int size()const
 		{
@@ -75,19 +85,31 @@ namespace sponge
 		}
 		inline int& ls(int x)
 		{
-			return tr[x].son[0];
+			return nd[x].son[0];
 		}
 		inline int& rs(int x)
 		{
-			return tr[x].son[1];
+			return nd[x].son[1];
 		}
 		void reserve(int _cap)
 		{
-			if(tr!=nullptr)delete[] tr;
+			if(nd!=nullptr)destroy_nodes();
 			n=0;
 			cap=_cap;
 			stk.clear();
-			tr=new node_t[cap];
+			nd=allocator<node_t>{}.allocate(cap);
+			int i=0;
+			try
+			{
+				for(;i<cap;i++)::new((void*)(nd+i)) node_t(*this);
+			}
+			catch(...)
+			{
+				while(i)nd[--i].~node_t();
+				allocator<node_t>{}.deallocate(nd,cap);
+				nd=nullptr;
+				throw;
+			}
 		}
 		int alloc()
 		{
@@ -102,12 +124,12 @@ namespace sponge
 				x=++n;
 				ASSERT(x<cap);
 			}
-			tr[x]=node_t();
+			nd[x]=node_t(*this);
 			return x;
 		}
 		void dealloc(int x)
 		{
-			if(!x||--tr[x].ref)return;
+			if(!x||--nd[x].ref)return;
 			if(ls(x))dealloc(ls(x));
 			if(rs(x))dealloc(rs(x));
 			stk.push_back(x);
@@ -115,65 +137,65 @@ namespace sponge
 		int copy(int x)
 		{
 			int y=alloc();
-			tr[y]=tr[x];
+			nd[y]=nd[x];
 			return y;
 		}
 		int leaf(s_cr v)
 		{
 			int x=alloc();
-			tr[x].size=1;
-			tr[x].val=v;
-			tr[x].ref=1;
+			nd[x].size=1;
+			nd[x].val=v;
+			nd[x].ref=1;
 			return x;
 		}
 		void push_up(int x)
 		{
-			tr[x].size=tr[ls(x)].size+tr[rs(x)].size;
-			tr[x].val=s_op_s_s(tr[ls(x)].val,tr[rs(x)].val);
+			nd[x].size=nd[ls(x)].size+nd[rs(x)].size;
+			nd[x].val=s_op_s_s(nd[ls(x)].val,nd[rs(x)].val);
 		}
 #ifndef SPONGE_PTREE_NTAG
 		void apply_tag(int& x,t_cr v)
 		{
 			if(!x)return;
-			tr[x].val=s_op_s_t(tr[x].val,v,tr[x].size);
-			tr[x].tag=t_op_t_t(tr[x].tag,v);
+			nd[x].val=s_op_s_t(nd[x].val,v,nd[x].size);
+			nd[x].tag=t_op_t_t(nd[x].tag,v);
 		}
 #endif
 		void refresh(int& x)
 		{
-			if(!x||tr[x].ref==1)return;
+			if(!x||nd[x].ref==1)return;
 			int old=x;
 			int y=copy(old);
-			tr[y].ref=1;
-			if(ls(y))++tr[ls(y)].ref;
-			if(rs(y))++tr[rs(y)].ref;
+			nd[y].ref=1;
+			if(ls(y))++nd[ls(y)].ref;
+			if(rs(y))++nd[rs(y)].ref;
 			dealloc(old);
 			x=y;
 		}
 		void push_down(int x[[maybe_unused]])
 		{
 #ifndef SPONGE_PTREE_NTAG
-			if(!x||tr[x].size==1)return;
-			if(!is_t_id(tr[x].tag)
+			if(!x||nd[x].size==1)return;
+			if(!is_t_id(nd[x].tag)
 #ifndef SPONGE_PTREE_NREV
-				||tr[x].rev
+				||nd[x].rev
 #endif
 			)
 			{
 				refresh(ls(x)),refresh(rs(x));
-				if(!is_t_id(tr[x].tag))
+				if(!is_t_id(nd[x].tag))
 				{
-					apply_tag(ls(x),tr[x].tag);
-					apply_tag(rs(x),tr[x].tag);
-					tr[x].tag=t_id();
+					apply_tag(ls(x),nd[x].tag);
+					apply_tag(rs(x),nd[x].tag);
+					nd[x].tag=t_id();
 				}
 #ifndef SPONGE_PTREE_NREV
-				if(tr[x].rev)
+				if(nd[x].rev)
 				{
 					swap(ls(x),rs(x));
-					tr[ls(x)].rev^=1;
-					tr[rs(x)].rev^=1;
-					tr[x].rev=0;
+					nd[ls(x)].rev^=1;
+					nd[rs(x)].rev^=1;
+					nd[x].rev=0;
 				}
 #endif
 			}
@@ -183,9 +205,9 @@ namespace sponge
 		{
 			if(!x||!y)return x|y;
 			int z=alloc();
-			tr[z].ref=1;
+			nd[z].ref=1;
 #ifdef SPONGE_PTREE_FA
-			tr[x].fa=tr[y].fa=z;
+			nd[x].fa=nd[y].fa=z;
 #endif
 			ls(z)=x,rs(z)=y;
 			push_up(z);
@@ -196,10 +218,10 @@ namespace sponge
 			if(!x)return {0,0};
 			push_down(x);
 			int y=ls(x),z=rs(x);
-			if(y)++tr[y].ref;
-			if(z)++tr[z].ref;
+			if(y)++nd[y].ref;
+			if(z)++nd[z].ref;
 #ifdef SPONGE_PTREE_FA
-			tr[y].fa=tr[z].fa=0;
+			nd[y].fa=nd[z].fa=0;
 #endif
 			dealloc(x);
 			x=0;
@@ -223,19 +245,19 @@ namespace sponge
 		static constexpr double alpha=0.292;
 		bool unbalanced(int x,int y)
 		{
-			return tr[y].size<alpha*(tr[x].size+tr[y].size);
+			return nd[y].size<alpha*(nd[x].size+nd[y].size);
 		}
 		bool need_double_rotation(int x,bool r)
 		{
-			return tr[tr[x].son[!r]].size>tr[x].size/(2-alpha);
+			return nd[nd[x].son[!r]].size>nd[x].size/(2-alpha);
 		}
 		void balance(int& x)
 		{
-			if(tr[x].size==1)return;
-			bool r=tr[rs(x)].size>tr[ls(x)].size;
-			if(!unbalanced(tr[x].son[r],tr[x].son[!r]))return;
-			if(tr[tr[x].son[r]].size>1&&need_double_rotation(tr[x].son[r],r))
-				rotate(tr[x].son[r],!r);
+			if(nd[x].size==1)return;
+			bool r=nd[rs(x)].size>nd[ls(x)].size;
+			if(!unbalanced(nd[x].son[r],nd[x].son[!r]))return;
+			if(nd[nd[x].son[r]].size>1&&need_double_rotation(nd[x].son[r],r))
+				rotate(nd[x].son[r],!r);
 			rotate(x,r);
 		}
 #endif
@@ -265,19 +287,19 @@ namespace sponge
 		pair<int,int>split(int x,Sz k)
 		{
 			if(!k)return {0,x};
-			else if(k==tr[x].size)return {x,0};
+			else if(k==nd[x].size)return {x,0};
 			else
 			{
 				int a,b,c,d;
 				tie(a,b)=_split(x);
-				if(k<=tr[a].size)
+				if(k<=nd[a].size)
 				{
 					tie(c,d)=split(a,k);
 					return {c,merge(d,b)};
 				}
 				else
 				{
-					tie(c,d)=split(b,k-tr[a].size);
+					tie(c,d)=split(b,k-nd[a].size);
 					return {merge(a,c),d};
 				}
 			}
@@ -327,7 +349,7 @@ namespace sponge
 		{
 			auto[a,y,b]=access(x,l,r);
 			refresh(y);
-			tr[y].rev^=1;
+			nd[y].rev^=1;
 			x=merge(a,merge(y,b));
 		}
 #endif
@@ -338,19 +360,19 @@ namespace sponge
 		S query(int& x,Sz l,Sz r)
 		{
 			auto[a,y,b]=access(x,l,r);
-			S ans=tr[y].val;
+			S ans=nd[y].val;
 			x=merge(a,merge(y,b));
 			return ans;
 		}
 		S pos(int x,Sz p)
 		{
-			while(tr[x].size>1)
+			while(nd[x].size>1)
 			{
 				push_down(x);
-				if(tr[ls(x)].size>=p)x=ls(x);
-				else p-=tr[ls(x)].size,x=rs(x);
+				if(nd[ls(x)].size>=p)x=ls(x);
+				else p-=nd[ls(x)].size,x=rs(x);
 			}
-			return tr[x].val;
+			return nd[x].val;
 		}
 		vector<S> range(int& x,Sz l,Sz r)
 		{
@@ -365,7 +387,7 @@ namespace sponge
 			auto dfs=[&](auto&& dfs,int x)->void
 			{
 				if(!x)return;
-				if(tr[x].size==1)return ans.push_back(tr[x].val),[]{}();
+				if(nd[x].size==1)return ans.push_back(nd[x].val),[]{}();
 				push_down(x);
 				dfs(dfs,ls(x));
 				dfs(dfs,rs(x));
@@ -389,18 +411,18 @@ namespace sponge
 		int derive(int x)
 		{
 			if(!x)return 0;
-			tr[x].ref++;
+			nd[x].ref++;
 			int y=x;
 			refresh(y);
 			return y;
 		}
 		int size(int x)
 		{
-			return tr[x].size;
+			return nd[x].size;
 		}
 		S& deref(int x)
 		{
-			return tr[x].val;
+			return nd[x].val;
 		}
 	};
 	template<
@@ -417,7 +439,15 @@ namespace sponge
 		using B=pforest<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT,SizeType>;
 		using s_cr=typename B::s_cr;
 		using t_cr=typename B::t_cr;
-		inline static constexpr Compare cmp{};
+		Compare cmp{};
+		using M=typename B::M;
+		ordered_pforest()=default;
+		explicit ordered_pforest(Compare c):cmp(move(c)){}
+		explicit ordered_pforest(const M& m):B(m){}
+		ordered_pforest(Compare c,const M& m):B(m),cmp(move(c)){}
+		ordered_pforest(int n,const M& m):B(n,m){}
+		ordered_pforest(int n,Compare c):B(n),cmp(move(c)){}
+		ordered_pforest(int n,Compare c,const M& m):B(n,m),cmp(move(c)){}
 		bool cmpeq(s_cr x,s_cr y)
 		{
 			return !cmp(x,y)&&!cmp(y,x);
@@ -426,7 +456,7 @@ namespace sponge
 		{
 			if(!t)return 0;
 			int x=t;
-			while(B::tr[x].size>1)
+			while(B::nd[x].size>1)
 			{
 				B::push_down(x);
 				if(!cmp(B::deref(B::ls(x)),v))x=B::ls(x);
@@ -437,13 +467,13 @@ namespace sponge
 		}
 		int find_by_order(int t,Sz k)
 		{
-			if(!t||k<=0||k>B::tr[t].size)return 0;
+			if(!t||k<=0||k>B::nd[t].size)return 0;
 			int x=t;
-			while(B::tr[x].size>1)
+			while(B::nd[x].size>1)
 			{
 				B::push_down(x);
-				if(B::tr[B::ls(x)].size>=k)x=B::ls(x);
-				else k-=B::tr[B::ls(x)].size,x=B::rs(x);
+				if(B::nd[B::ls(x)].size>=k)x=B::ls(x);
+				else k-=B::nd[B::ls(x)].size,x=B::rs(x);
 			}
 			return x;
 		}
@@ -452,11 +482,11 @@ namespace sponge
 			if(!t)return 1;
 			int x=t;
 			Sz ans=0;
-			while(B::tr[x].size>1)
+			while(B::nd[x].size>1)
 			{
 				B::push_down(x);
 				if(!cmp(B::deref(B::ls(x)),v))x=B::ls(x);
-				else ans+=B::tr[B::ls(x)].size,x=B::rs(x);
+				else ans+=B::nd[B::ls(x)].size,x=B::rs(x);
 			}
 			if(cmp(B::deref(x),v))ans++;
 			return ++ans;
@@ -465,10 +495,10 @@ namespace sponge
 		{
 			int x=t;
 			if(!x)return 0;
-			while(B::tr[x].size>1)
+			while(B::nd[x].size>1)
 			{
 				B::push_down(x);
-				if(cmp(B::deref(B::tr[B::ls(x)]),v))x=B::rs(x);
+				if(cmp(B::deref(B::nd[B::ls(x)]),v))x=B::rs(x);
 				else x=B::ls(x);
 			}
 			if(cmp(B::deref(x),v))return 0;
@@ -486,7 +516,7 @@ namespace sponge
 		{
 			if(!t)return 0;
 			int x=t;
-			while(B::tr[x].size>1)
+			while(B::nd[x].size>1)
 			{
 				B::push_down(x);
 				if(cmp(v,B::deref(B::ls(x))))x=B::ls(x);
@@ -512,7 +542,7 @@ namespace sponge
 		{
 			if(!x)return {0,0};
 			if(!cmp(k,B::deref(x)))return {x,0};
-			if(B::tr[x].size==1)return {0,x};
+			if(B::nd[x].size==1)return {0,x};
 			auto[a,b]=B::_split(x);
 			if(cmp(k,B::deref(a)))
 			{
@@ -548,7 +578,7 @@ namespace sponge
 		S vquery(int& x,s_cr l,s_cr r)
 		{
 			auto[a,y,b]=vaccess(x,l,r);
-			S ans=y?B::tr[y].val:S();
+			S ans=y?B::nd[y].val:S();
 			x=B::merge(a,B::merge(y,b));
 			return ans;
 		}

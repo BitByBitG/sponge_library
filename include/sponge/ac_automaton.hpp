@@ -18,14 +18,14 @@ namespace sponge
 	};
 	template<
 		typename Data,typename InitFn,typename InsertFn,typename BuildFn,
-		typename String=string,int _sigma=26,typename Mapping=lower_to_num
+		typename String=string,int Sigma=26,typename Mapping=lower_to_num
 	>
 	class ac_automaton
 	{
 	public:
 		using string_type=String;
 		using value_type=Data;
-		static constexpr int sigma=_sigma;
+		static constexpr int sigma=Sigma;
 		static constexpr Mapping mapping{};
 		static constexpr InitFn init_fn{};
 		static constexpr InsertFn insert_fn{};
@@ -102,7 +102,7 @@ namespace sponge
 			}
 		}
 	};
-	template<typename String=string,int _sigma=26,typename Mapping=lower_to_num>
-	using ac_automaton_n=ac_automaton<null_t,null_id,null_auto,null_auto,String,_sigma,Mapping>;
+	template<typename String=string,int Sigma=26,typename Mapping=lower_to_num>
+	using ac_automaton_n=ac_automaton<null_t,null_id,null_auto,null_auto,String,Sigma,Mapping>;
 }
 #endif

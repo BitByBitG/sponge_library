@@ -16,9 +16,13 @@ namespace sponge
 		int n,lg;
 		multidimension<S,2> st;
 		sparse_table():sparse_table(0){}
-		sparse_table(int n):sparse_table(n,[](int){return s_id();}){}
+		sparse_table(int n):sparse_table(n,M{}){}
+		explicit sparse_table(const M& m):sparse_table(0,m){}
+		sparse_table(int n,const M& m):sparse_table(n,[&m](int){return m.s_id();},m){}
+		template<typename F,enable_if_t<!is_same_v<decay_t<F>,M>,int> =0>
+		sparse_table(int _n,F&& f):sparse_table(_n,forward<F>(f),M{}){}
 		template<typename F>
-		sparse_table(int _n,F&& f)
+		sparse_table(int _n,F&& f,const M& m):M(m)
 		{
 			resize(_n);
 			for(int i=1;i<=n;i++)st[0][i]=f(i);
@@ -29,7 +33,7 @@ namespace sponge
 		void resize(int _n)
 		{
 			n=_n;
-			lg=__lg(n);
+			lg=n?__lg(n):0;
 			st.resize(lg+1,n+1);
 		}
 		S query(int l,int r)

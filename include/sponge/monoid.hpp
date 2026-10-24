@@ -14,8 +14,10 @@ namespace sponge
 		using value_type=S;
 		using size_type=SizeType;
 		using s_cr=const S&;
-		inline static constexpr SId s_id{};
-		inline static constexpr SOpSS s_op_s_s{};
+		SId s_id{};
+		SOpSS s_op_s_s{};
+		monoid()=default;
+		monoid(SId f0,SOpSS f1):s_id(move(f0)),s_op_s_s(move(f1)){}
 	};
 	template<
 		typename S,typename T,typename SId,typename TId,typename IsTId,
@@ -37,12 +39,14 @@ namespace sponge
 		using size_type=SizeType;
 		using s_cr=const S&;
 		using t_cr=const T&;
-		inline static constexpr SId s_id{};
-		inline static constexpr TId t_id{};
-		inline static constexpr IsTId is_t_id{};
-		inline static constexpr SOpSS s_op_s_s{};
-		inline static constexpr SOpST s_op_s_t{};
-		inline static constexpr TOpTT t_op_t_t{};
+		SId s_id{};
+		TId t_id{};
+		IsTId is_t_id{};
+		SOpSS s_op_s_s{};
+		SOpST s_op_s_t{};
+		TOpTT t_op_t_t{};
+		double_monoid()=default;
+		double_monoid(SId f0,TId f1,IsTId f2,SOpSS f3,SOpST f4,TOpTT f5):s_id(move(f0)),t_id(move(f1)),is_t_id(move(f2)),s_op_s_s(move(f3)),s_op_s_t(move(f4)),t_op_t_t(move(f5)){}
 	};
 }
 #endif

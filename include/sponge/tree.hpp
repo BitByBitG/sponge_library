@@ -23,6 +23,8 @@ namespace sponge
 		int root;
 		tree():root(){}
 		tree(int _root):root(_root){}
+		explicit tree(const typename Fr::M& m):root(){static_cast<typename Fr::M&>(fr)=m;}
+		tree(int _root,const typename Fr::M& m):root(_root){static_cast<typename Fr::M&>(fr)=m;}
 		template<typename F>
 		void build(int n,F&& f){root=fr.build(n,f);}
 		template<typename RAIter>
@@ -72,6 +74,8 @@ namespace sponge
 		int root;
 		ordered_tree():root(){}
 		ordered_tree(int _root):root(_root){}
+		explicit ordered_tree(const typename Fr::M& m):root(){static_cast<typename Fr::M&>(fr)=m;}
+		ordered_tree(int _root,const typename Fr::M& m):root(_root){static_cast<typename Fr::M&>(fr)=m;}
 		template<typename F>
 		void build(int n,F&& f){root=fr.build(n,f);}
 		template<typename RAIter>

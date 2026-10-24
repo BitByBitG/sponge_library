@@ -26,7 +26,10 @@ namespace sponge
 	class priority_array:public array<T,n>
 	{
 	public:
-		static constexpr Cmp cmp{};
+		Cmp cmp{};
+		priority_array()=default;
+		explicit priority_array(Cmp c):cmp(move(c)){}
+		priority_array(const array<T,n>& a,Cmp c):array<T,n>(a),cmp(move(c)){}
 		using array<T,n>::array;
 		void insert(const T& v)
 		{

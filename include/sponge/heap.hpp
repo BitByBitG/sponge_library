@@ -13,7 +13,7 @@ namespace sponge
 		using value_type=Key;
 		using value_compare=Compare;
 		using allocator_type=Alloc;
-		inline static constexpr Compare cmp{};
+		Compare cmp{};
 		using alloc_traits=allocator_traits<Alloc>;
 	private:
 		struct node_t;
@@ -101,7 +101,7 @@ namespace sponge
 			}
 			return y;
 		}
-		static ptr_t merge(ptr_t x,ptr_t y)
+		ptr_t merge(ptr_t x,ptr_t y)
 		{
 			if(!x)return y;
 			if(!y)return x;
@@ -112,7 +112,7 @@ namespace sponge
 			y->fa=x;
 			return x;
 		}
-		static ptr_t pairing_merge(ptr_t x)
+		ptr_t pairing_merge(ptr_t x)
 		{
 			ptr_t st=nullptr,ans=nullptr;
 			while(x)
@@ -166,8 +166,14 @@ namespace sponge
 			}
 		};
 		pairing_heap():root(){}
+		explicit pairing_heap(Compare c):cmp(move(c)),root(){}
 		template<typename Iter>
 		pairing_heap(Iter first,Iter last):pairing_heap()
+		{
+			insert(first,last);
+		}
+		template<typename Iter>
+		pairing_heap(Iter first,Iter last,Compare c):pairing_heap(move(c))
 		{
 			insert(first,last);
 		}
@@ -175,7 +181,11 @@ namespace sponge
 		{
 			insert(il);
 		}
-		pairing_heap(const pairing_heap& h):root(copy_tree(h.root)){}
+		pairing_heap(const initializer_list<Key>& il,Compare c):pairing_heap(move(c))
+		{
+			insert(il);
+		}
+		pairing_heap(const pairing_heap& h):cmp(h.cmp),root(copy_tree(h.root)){}
 		pairing_heap& operator=(const pairing_heap& h)
 		{
 			if(this!=&h)
@@ -185,15 +195,15 @@ namespace sponge
 			}
 			return *this;
 		}
-		pairing_heap(pairing_heap&& h)noexcept:root(h.root)
+		pairing_heap(pairing_heap&& h)noexcept(is_nothrow_move_constructible_v<Compare>):cmp(move(h.cmp)),root(h.root)
 		{
 			h.root=nullptr;
 		}
-		pairing_heap& operator=(pairing_heap&& h)noexcept
+		pairing_heap& operator=(pairing_heap&& h)
 		{
 			if(this!=&h)
 			{
-				pairing_heap tmp(h);
+				pairing_heap tmp(move(h));
 				swap(tmp);
 			}
 			return *this;
@@ -260,6 +270,7 @@ namespace sponge
 		}
 		void swap(pairing_heap& h)
 		{
+			std::swap(cmp,h.cmp);
 			std::swap(root,h.root);
 		}
 		void extract(point_iterator it)

@@ -22,9 +22,13 @@ namespace sponge
 		vector<S> val;
 		vector<T> tag;
 		segtree():segtree(0){}
-		segtree(int _n):segtree(_n,[](int){return s_id();}){}
+		segtree(int n):segtree(n,M{}){}
+		explicit segtree(const M& m):segtree(0,m){}
+		segtree(int n,const M& m):segtree(n,[&m](int){return m.s_id();},m){}
+		template<typename F,enable_if_t<!is_same_v<decay_t<F>,M>,int> =0>
+		segtree(int _n,F&& f):segtree(_n,forward<F>(f),M{}){}
 		template<typename F>
-		segtree(int _n,F&& f):n(_n)
+		segtree(int _n,F&& f,const M& m):M(m),n(_n)
 		{
 			sz=bit_ceil<uint32_t>(n);
 			lg=countr_zero<uint32_t>(sz);
