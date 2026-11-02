@@ -6,6 +6,32 @@ namespace sponge
 {
 	namespace detail
 	{
+		template<typename Bitset>
+		class bitset_reference
+		{
+			Bitset* owner;
+			size_t pos;
+		public:
+			bitset_reference(Bitset& b,size_t p):owner(&b),pos(p){}
+			bitset_reference(const bitset_reference&)=default;
+			operator bool()const{return (*owner)(pos);}
+			bitset_reference& operator=(bool value)
+			{
+				if(value)owner->set(pos);
+				else owner->reset(pos);
+				return*this;
+			}
+			bitset_reference& operator=(const bitset_reference& other)
+			{
+				return*this=bool(other);
+			}
+			bool operator~()const{return !bool(*this);}
+			bitset_reference& flip()
+			{
+				owner->flip(pos);
+				return*this;
+			}
+		};
 		template<typename T>
 		struct aligned_allocator
 		{
@@ -42,6 +68,71 @@ namespace sponge
 			{
 				return static_cast<const E&>(*this);
 			}
+			bool any()const
+			{
+				const auto& e=operator()();
+				const size_t full=e.size()/256;
+				for(size_t i=0;i<full;++i)
+				{
+					const __m256i v=e.block_at(i);
+					if(!_mm256_testz_si256(v,v))return true;
+				}
+				if(size_t rem=e.size()%256)
+				{
+					uint64_t words[4];
+					_mm256_storeu_si256(reinterpret_cast<__m256i*>(words),e.block_at(full));
+					for(size_t i=0;rem;++i)
+					{
+						if(rem>=64)
+						{
+							if(words[i])return true;
+							rem-=64;
+						}
+						else return (words[i]&((uint64_t(1)<<rem)-1))!=0;
+					}
+				}
+				return false;
+			}
+			bool none()const{return !any();}
+			size_t count()const
+			{
+				const auto& e=operator()();
+				const size_t full=e.size()/256;
+				const __m256i mk=_mm256_set1_epi8(0x0F);
+				const __m256i tab=_mm256_setr_epi8(
+				0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4,
+				0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4
+				);
+				__m256i res=_mm256_setzero_si256();
+				for(size_t i=0;i<full;++i)
+				{
+					const __m256i v=e.block_at(i);
+					const __m256i lo=_mm256_shuffle_epi8(tab,_mm256_and_si256(v,mk));
+					const __m256i hi=_mm256_shuffle_epi8(tab,_mm256_and_si256(_mm256_srli_epi16(v,4),mk));
+					res=_mm256_add_epi64(res,_mm256_sad_epu8(_mm256_add_epi8(lo,hi),_mm256_setzero_si256()));
+				}
+				uint64_t words[4];
+				_mm256_storeu_si256(reinterpret_cast<__m256i*>(words),res);
+				size_t total=size_t(words[0]+words[1]+words[2]+words[3]);
+				if(size_t rem=e.size()%256)
+				{
+					_mm256_storeu_si256(reinterpret_cast<__m256i*>(words),e.block_at(full));
+					for(size_t i=0;rem;++i)
+					{
+						if(rem>=64)
+						{
+							total+=size_t(__builtin_popcountll(words[i]));
+							rem-=64;
+						}
+						else
+						{
+							total+=size_t(__builtin_popcountll(words[i]&((uint64_t(1)<<rem)-1)));
+							break;
+						}
+					}
+				}
+				return total;
+			}
 		};
 	}
 	class dynamic_bitset;
@@ -65,7 +156,7 @@ namespace sponge
 			{
 				return v.size();
 			}
-			__m256i block_at(size_t i)const
+			INLINE __m256i block_at(size_t i)const
 			{
 				return _mm256_xor_si256(v.block_at(i),_mm256_set1_epi64x(-1));
 			}
@@ -85,7 +176,7 @@ namespace sponge
 				ASSERT(l.size()==r.size());
 				return l.size();
 			}
-			__m256i block_at(size_t i)const
+			INLINE __m256i block_at(size_t i)const
 			{
 				auto a=l.block_at(i),b=r.block_at(i);
 				if constexpr(op==0)return _mm256_and_si256(a,b);
@@ -129,6 +220,7 @@ namespace sponge
 	class static_bitset:public detail::bitset_expression<static_bitset<N>>
 	{
 	public:
+		using reference=detail::bitset_reference<static_bitset<N>>;
 		using word=uint64_t;
 		using block=__m256i;
 		static constexpr size_t word_size=64,block_size=4,npos=size_t(-1);
@@ -138,7 +230,7 @@ namespace sponge
 		static constexpr size_t wc(){return N/64+(N%64!=0);}
 		static constexpr size_t bc(){return N/256+(N%256!=0);}
 		alignas(32)std::array<word,bc()?bc()*block_size:block_size>d{};
-		void bs(size_t i,block v)
+		INLINE void bs(size_t i,block v)
 		{
 			_mm256_store_si256(reinterpret_cast<block*>(d.data()+i*4),v);
 		}
@@ -167,12 +259,13 @@ namespace sponge
 			return*this;
 		}
 		word word_at(size_t i)const{return d[i];}
-		block block_at(size_t i)const
+		INLINE block block_at(size_t i)const
 		{
 			return _mm256_load_si256(reinterpret_cast<const block*>(d.data()+i*4));
 		}
 		void swap(static_bitset& o)noexcept{d.swap(o.d);}
 		friend void swap(static_bitset& a,static_bitset& b)noexcept{a.swap(b);}
+		reference operator[](size_t p){return reference(*this,p);}
 		bool operator[](size_t p)const
 		{
 			if(p>=sz)return false;
@@ -224,10 +317,6 @@ namespace sponge
 			word part[block_size];
 			_mm256_storeu_si256((block*)part,res);
 			return size_t(part[0]+part[1]+part[2]+part[3]);
-		}
-		size_t popcnt()const
-		{
-			return count();
 		}
 		bool none()const
 		{
@@ -732,6 +821,7 @@ namespace sponge
 	class dynamic_bitset:public detail::bitset_expression<dynamic_bitset>
 	{
 	public:
+		using reference=detail::bitset_reference<dynamic_bitset>;
 		using word=uint64_t;
 		using block=__m256i;
 		static constexpr size_t word_size=64,block_size=4,npos=size_t(-1);
@@ -752,7 +842,7 @@ namespace sponge
 		{
 			return d.size()/4;
 		}
-		void bs(size_t i,block v)
+		INLINE void bs(size_t i,block v)
 		{
 			_mm256_store_si256(reinterpret_cast<block*>(d.data()+i*4),v);
 		}
@@ -813,7 +903,7 @@ namespace sponge
 		{
 			return d[i];
 		}
-		block block_at(size_t i)const
+		INLINE block block_at(size_t i)const
 		{
 			return _mm256_load_si256(reinterpret_cast<const block*>(d.data()+i*4));
 		}
@@ -851,6 +941,7 @@ namespace sponge
 		{
 			a.swap(b);
 		}
+		reference operator[](size_t p){return reference(*this,p);}
 		bool operator[](size_t p)const
 		{
 			if(p>=sz)return false;
@@ -902,10 +993,6 @@ namespace sponge
 			word part[block_size];
 			_mm256_storeu_si256((block*)part,res);
 			return size_t(part[0]+part[1]+part[2]+part[3]);
-		}
-		size_t popcnt()const
-		{
-			return count();
 		}
 		bool none()const
 		{

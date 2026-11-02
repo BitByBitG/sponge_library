@@ -4,6 +4,7 @@
 #include<ext/pb_ds/hash_policy.hpp>
 #include<sponge/core.hpp>
 #include<sponge/type_traits.hpp>
+#include<sponge/bit.hpp>
 namespace sponge
 {
 	ull splitmix64(ull x)

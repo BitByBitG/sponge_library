@@ -120,7 +120,7 @@ namespace sponge
 		{
 			n=_n;
 			m=_m;
-			this->assign(_n,vector<T>(_m));
+			this->assign(_n,vector<T>(_m,zero()));
 		}
 		const T& raw(int x,int y)const
 		{

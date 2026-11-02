@@ -86,7 +86,6 @@ namespace sponge
 			int bcc_cnt=0,_dfn=0;
 			vector<vector<int>> _bcc;
 			vector<int> dfn(v+1),low(v+1),stk;
-			vector<char> vis(v+1);
 			auto dfs=[&](auto&& dfs,int x,int e)->void
 			{
 				dfn[x]=low[x]=++_dfn;

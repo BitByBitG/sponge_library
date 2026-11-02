@@ -93,7 +93,7 @@ namespace sponge
 	ll pollard_rho(ll n)
 	{
 		if(miller_rabin(n))return -1;
-		uniform_int_distribution<ll>uid(1,n);
+		uniform_int_distribution<ll> uid(1,n);
 		ll s=0,t=0,c=uid(rng),v=1,d;
 		for(ll i=1;;i<<=1,s=t,v=1)
 		{
