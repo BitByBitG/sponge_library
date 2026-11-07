@@ -2,7 +2,6 @@
 #define SPONGE_WBLT_HPP
 #include<sponge/core.hpp>
 #include<sponge/utility.hpp>
-#include<iterator>
 namespace sponge
 {
 	template<typename Key,typename Compare=less<Key>,typename Alloc=allocator<Key>>
@@ -508,11 +507,11 @@ namespace sponge
 			}
 			return *this;
 		}
-		wblt(wblt&& t)noexcept(is_nothrow_move_constructible_v<Compare>):cmp(move(t.cmp)),root(t.root),guard(t.guard)
+		wblt(wblt&& t)noexcept(std::is_nothrow_move_constructible<Compare>::value):cmp(move(t.cmp)),root(t.root),guard(t.guard)
 		{
 			t.root=t.guard=nullptr;
 		}
-		wblt& operator=(wblt&& t)noexcept(is_nothrow_move_constructible_v<Compare>&&is_nothrow_swappable_v<Compare>)
+		wblt& operator=(wblt&& t)
 		{
 			if(this!=&t)
 			{
