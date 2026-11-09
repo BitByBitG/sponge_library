@@ -4,7 +4,7 @@
 namespace sponge
 {
 	template<typename T,typename F>
-	INLINE T binary_search_f0(T l,T r,F&& f)
+	INLINE T binary_search_l0(T l,T r,F&& f)
 	{
 		T ans=r+1;
 		while(l<=r)
@@ -16,19 +16,19 @@ namespace sponge
 		return ans;
 	}
 	template<typename T,typename F>
-	INLINE T binary_search_f1(T l,T r,F&& f)
-	{
-		return binary_search_f0(l,r,[&](T x){return !f(x);});
-	}
-	template<typename T,typename F>
-	INLINE T binary_search_l0(T l,T r,F&& f)
-	{
-		return binary_search_f1(l,r,f)-1;
-	}
-	template<typename T,typename F>
 	INLINE T binary_search_l1(T l,T r,F&& f)
 	{
-		return binary_search_f0(l,r,f)-1;
+		return binary_search_l0(l,r,[&](T x){return !f(x);});
+	}
+	template<typename T,typename F>
+	INLINE T binary_search_r0(T l,T r,F&& f)
+	{
+		return binary_search_l1(l,r,f)-1;
+	}
+	template<typename T,typename F>
+	INLINE T binary_search_r1(T l,T r,F&& f)
+	{
+		return binary_search_l0(l,r,f)-1;
 	}
 	template<typename T,typename F,std::enable_if_t<std::is_integral_v<T>,int> =0>
 	auto ternary_search_max(T l,T r,F&& f)

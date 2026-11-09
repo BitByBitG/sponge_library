@@ -4,12 +4,11 @@
 #include<sponge/monoid.hpp>
 #include<sponge/allocator.hpp>
 #include<sponge/segtree.hpp>
-#include<sponge/forest.hpp>
-#include<sponge/tree.hpp>
-#include<sponge/pforest.hpp>
-#include<sponge/ptree.hpp>
-#include<sponge/satt.hpp>
+#include<sponge/persistent_segtree.hpp>
+#include<sponge/wblt_set.hpp>
 #include<sponge/wblt.hpp>
+#include<sponge/persistent_wblt.hpp>
+#include<sponge/satt.hpp>
 #include<sponge/rbt.hpp>
 #include<sponge/heap.hpp>
 #include<sponge/bitset.hpp>

@@ -1,5 +1,5 @@
-#ifndef SPONGE_FOREST_HPP
-#define SPONGE_FOREST_HPP
+#ifndef SPONGE_PERSISTENT_WBLT_HPP
+#define SPONGE_PERSISTENT_WBLT_HPP
 #include<sponge/core.hpp>
 #include<sponge/monoid.hpp>
 #include<sponge/functor.hpp>
@@ -9,7 +9,7 @@ namespace sponge
 		typename S,typename T,typename SId,typename TId,typename IsTId,
 		typename SOpSS,typename SOpST,typename TOpTT,typename SizeType=int
 	>
-	class forest:
+	class pwblt_forest:
 		public double_monoid<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT,SizeType>
 	{
 	public:
@@ -21,40 +21,42 @@ namespace sponge
 		using t_cr=typename M::t_cr;
 		struct node_t
 		{
-#ifdef SPONGE_TREE_FA
+#ifdef SPONGE_PERSISTENT_WBLT_FA
 			int fa;
 #endif
 			array<int,2> son;
 			Sz size;
-#ifndef SPONGE_TREE_NREV
+#ifndef SPONGE_PERSISTENT_WBLT_NREV
 			bool rev;
 #endif
 			S val;
-#ifndef SPONGE_TREE_NTAG
+#ifndef SPONGE_PERSISTENT_WBLT_NTAG
 			T tag;
 #endif
+			int ref;
 			node_t():node_t(M{}){}
 			node_t(const M& m):
-#ifdef SPONGE_TREE_FA
+#ifdef SPONGE_PERSISTENT_WBLT_FA
 				fa(),
 #endif
 				son{},size(),
-#ifndef SPONGE_TREE_NREV
+#ifndef SPONGE_PERSISTENT_WBLT_NREV
 				rev(),
 #endif
-				val(m.s_id())
-#ifndef SPONGE_TREE_NTAG
-				,tag(m.t_id())
+				val(m.s_id()),
+#ifndef SPONGE_PERSISTENT_WBLT_NTAG
+				tag(m.t_id()),
 #endif
+				ref()
 			{}
 		};
 		int n,cap;
 		node_t* nd;
 		vector<int> stk;
-		forest():forest(M{}){}
-		explicit forest(const M& m):M(m),n(0),cap(0),nd(nullptr){}
-		forest(int _cap):forest(_cap,M{}){}
-		forest(int _cap,const M& m):forest(m)
+		pwblt_forest():pwblt_forest(M{}){}
+		explicit pwblt_forest(const M& m):M(m),n(0),cap(0),nd(nullptr){}
+		pwblt_forest(int _cap):pwblt_forest(_cap,M{}){}
+		pwblt_forest(int _cap,const M& m):pwblt_forest(m)
 		{
 			reserve(_cap);
 		}
@@ -65,7 +67,7 @@ namespace sponge
 			allocator<node_t>{}.deallocate(nd,cap);
 			nd=nullptr;
 		}
-		~forest()
+		~pwblt_forest()
 		{
 			destroy_nodes();
 		}
@@ -127,16 +129,23 @@ namespace sponge
 		}
 		void dealloc(int x)
 		{
-			if(!x)return;
+			if(!x||--nd[x].ref)return;
 			if(ls(x))dealloc(ls(x));
 			if(rs(x))dealloc(rs(x));
 			stk.push_back(x);
+		}
+		int copy(int x)
+		{
+			int y=alloc();
+			nd[y]=nd[x];
+			return y;
 		}
 		int leaf(s_cr v)
 		{
 			int x=alloc();
 			nd[x].size=1;
 			nd[x].val=v;
+			nd[x].ref=1;
 			return x;
 		}
 		void push_up(int x)
@@ -144,7 +153,7 @@ namespace sponge
 			nd[x].size=nd[ls(x)].size+nd[rs(x)].size;
 			nd[x].val=s_op_s_s(nd[ls(x)].val,nd[rs(x)].val);
 		}
-#ifndef SPONGE_TREE_NTAG
+#ifndef SPONGE_PERSISTENT_WBLT_NTAG
 		void apply_tag(int& x,t_cr v)
 		{
 			if(!x)return;
@@ -152,23 +161,35 @@ namespace sponge
 			nd[x].tag=t_op_t_t(nd[x].tag,v);
 		}
 #endif
+		void refresh(int& x)
+		{
+			if(!x||nd[x].ref==1)return;
+			int old=x;
+			int y=copy(old);
+			nd[y].ref=1;
+			if(ls(y))++nd[ls(y)].ref;
+			if(rs(y))++nd[rs(y)].ref;
+			dealloc(old);
+			x=y;
+		}
 		void push_down(int x[[maybe_unused]])
 		{
-#ifndef SPONGE_TREE_NTAG
+#ifndef SPONGE_PERSISTENT_WBLT_NTAG
 			if(!x||nd[x].size==1)return;
 			if(!is_t_id(nd[x].tag)
-#ifndef SPONGE_TREE_NREV
+#ifndef SPONGE_PERSISTENT_WBLT_NREV
 				||nd[x].rev
 #endif
 			)
 			{
+				refresh(ls(x)),refresh(rs(x));
 				if(!is_t_id(nd[x].tag))
 				{
 					apply_tag(ls(x),nd[x].tag);
 					apply_tag(rs(x),nd[x].tag);
 					nd[x].tag=t_id();
 				}
-#ifndef SPONGE_TREE_NREV
+#ifndef SPONGE_PERSISTENT_WBLT_NREV
 				if(nd[x].rev)
 				{
 					swap(ls(x),rs(x));
@@ -184,7 +205,8 @@ namespace sponge
 		{
 			if(!x||!y)return x|y;
 			int z=alloc();
-#ifdef SPONGE_TREE_FA
+			nd[z].ref=1;
+#ifdef SPONGE_PERSISTENT_WBLT_FA
 			nd[x].fa=nd[y].fa=z;
 #endif
 			ls(z)=x,rs(z)=y;
@@ -196,14 +218,16 @@ namespace sponge
 			if(!x)return {0,0};
 			push_down(x);
 			int y=ls(x),z=rs(x);
-#ifdef SPONGE_TREE_FA
+			if(y)++nd[y].ref;
+			if(z)++nd[z].ref;
+#ifdef SPONGE_PERSISTENT_WBLT_FA
 			nd[y].fa=nd[z].fa=0;
 #endif
-			stk.push_back(x);
+			dealloc(x);
 			x=0;
 			return {y,z};
 		}
-#ifndef SPONGE_TREE_UNBALANCED
+#ifndef SPONGE_PERSISTENT_WBLT_UNBALANCED
 		void rotate(int& x,bool r)
 		{
 			auto[a,b]=_split(x);
@@ -239,7 +263,7 @@ namespace sponge
 #endif
 		int merge(int x,int y)
 		{
-#ifndef SPONGE_TREE_UNBALANCED
+#ifndef SPONGE_PERSISTENT_WBLT_UNBALANCED
 			if(!x||!y)return x|y;
 			if(unbalanced(x,y))
 			{
@@ -304,10 +328,11 @@ namespace sponge
 			tie(a,x)=split(x,l-1);
 			return {a,x,b};
 		}
-#ifndef SPONGE_TREE_NTAG
+#ifndef SPONGE_PERSISTENT_WBLT_NTAG
 		void update(int& x,Sz l,Sz r,t_cr t)
 		{
 			auto[a,y,b]=access(x,l,r);
+			refresh(y);
 			apply_tag(y,t);
 			x=merge(a,merge(y,b));
 		}
@@ -315,13 +340,15 @@ namespace sponge
 		void set_pos(int& x,Sz p,s_cr v)
 		{
 			auto[a,y,b]=access(x,p,p);
+			refresh(y);
 			deref(y)=v;
 			x=merge(a,merge(y,b));
 		}
-#ifndef SPONGE_TREE_NREV
+#ifndef SPONGE_PERSISTENT_WBLT_NREV
 		void reverse(int& x,Sz l,Sz r)
 		{
 			auto[a,y,b]=access(x,l,r);
+			refresh(y);
 			nd[y].rev^=1;
 			x=merge(a,merge(y,b));
 		}
@@ -381,6 +408,14 @@ namespace sponge
 			x=merge(a,b);
 			dealloc(y);
 		}
+		int derive(int x)
+		{
+			if(!x)return 0;
+			nd[x].ref++;
+			int y=x;
+			refresh(y);
+			return y;
+		}
 		int size(int x)
 		{
 			return nd[x].size;
@@ -395,24 +430,24 @@ namespace sponge
 		typename S,typename T,typename SId,typename TId,typename IsTId,
 		typename SOpSS,typename SOpST,typename TOpTT,typename SizeType=int
 	>
-	class ordered_forest:
-		public forest<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT,SizeType>
+	class ordered_pwblt_forest:
+		public pwblt_forest<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT,SizeType>
 	{
 	public:
 		using Sz=SizeType;
 		using size_type=Sz;
-		using B=forest<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT,SizeType>;
+		using B=pwblt_forest<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT,SizeType>;
 		using s_cr=typename B::s_cr;
 		using t_cr=typename B::t_cr;
 		Compare cmp{};
 		using M=typename B::M;
-		ordered_forest()=default;
-		explicit ordered_forest(Compare c):cmp(move(c)){}
-		explicit ordered_forest(const M& m):B(m){}
-		ordered_forest(Compare c,const M& m):B(m),cmp(move(c)){}
-		ordered_forest(int n,const M& m):B(n,m){}
-		ordered_forest(int n,Compare c):B(n),cmp(move(c)){}
-		ordered_forest(int n,Compare c,const M& m):B(n,m),cmp(move(c)){}
+		ordered_pwblt_forest()=default;
+		explicit ordered_pwblt_forest(Compare c):cmp(move(c)){}
+		explicit ordered_pwblt_forest(const M& m):B(m){}
+		ordered_pwblt_forest(Compare c,const M& m):B(m),cmp(move(c)){}
+		ordered_pwblt_forest(int n,const M& m):B(n,m){}
+		ordered_pwblt_forest(int n,Compare c):B(n),cmp(move(c)){}
+		ordered_pwblt_forest(int n,Compare c,const M& m):B(n,m),cmp(move(c)){}
 		bool cmpeq(s_cr x,s_cr y)
 		{
 			return !cmp(x,y)&&!cmp(y,x);
@@ -528,12 +563,13 @@ namespace sponge
 			if(p)tie(a,x)=vsplit(x,B::deref(p));
 			return {a,x,b};
 		}
-#ifndef SPONGE_TREE_NTAG
+#ifndef SPONGE_PERSISTENT_WBLT_NTAG
 		void vupdate(int& x,s_cr l,s_cr r,t_cr t)
 		{
 			auto[a,y,b]=vaccess(x,l,r);
 			if(y)
 			{
+				B::refresh(y);
 				B::apply_tag(y,t);
 			}
 			x=B::merge(a,B::merge(y,b));
@@ -570,5 +606,161 @@ namespace sponge
 			return B::merge(hmerge(y,a),b);
 		}
 	};
+}
+#include<sponge/core.hpp>
+#include<sponge/monoid.hpp>
+#include<sponge/functor.hpp>
+namespace sponge
+{
+	template<
+		typename S,typename T,typename SId,typename TId,typename IsTId,
+		typename SOpSS,typename SOpST,typename TOpTT,typename SizeType=int
+	>
+	class persistent_wblt
+	{
+	public:
+		using Fr=pwblt_forest<S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT,SizeType>;
+		using pwblt_forest_type=Fr;
+		inline static Fr fr;
+		using Sz=typename Fr::Sz;
+		using size_type=Sz;
+		using s_cr=typename Fr::s_cr;
+		using t_cr=typename Fr::t_cr;
+		int root;
+		persistent_wblt():root(){}
+		persistent_wblt(int _root):root(_root){}
+		explicit persistent_wblt(const typename Fr::M& m):root(){static_cast<typename Fr::M&>(fr)=m;}
+		persistent_wblt(int _root,const typename Fr::M& m):root(_root){static_cast<typename Fr::M&>(fr)=m;}
+		template<typename F>
+		void build(int n,F&& f){root=fr.build(n,f);}
+		template<typename RAIter>
+		void build(RAIter first,RAIter last){root=fr.build(first,last);}
+		pair<persistent_wblt,persistent_wblt> split(int k)
+		{
+			auto[x,y]=fr.split(root,k);
+			return {persistent_wblt(x),persistent_wblt(y)};
+		}
+		array<persistent_wblt,3> access(Sz l,Sz r)
+		{
+			auto[x,y,z]=fr.access(root,l,r);
+			return {persistent_wblt(x),persistent_wblt(y),persistent_wblt(z)};
+		}
+#ifndef SPONGE_PERSISTENT_WBLT_NTAG
+		void update(Sz l,Sz r,t_cr t){fr.update(root,l,r,t);}
+#endif
+		void set_pos(Sz p,s_cr v){fr.set_pos(root,p,v);}
+#ifndef SPONGE_PERSISTENT_WBLT_NREV
+		void reverse(Sz l,Sz r){fr.reverse(root,l,r);}
+#endif
+		S query(Sz p){return pos(p);}
+		S query(Sz l,Sz r){return fr.query(root,l,r);}
+		S pos(Sz p){return fr.pos(root,p);}
+		vector<S> range(Sz l,Sz r){return fr.range(root,l,r);}
+		vector<S> seq(){return fr.seq(root);}
+		int insert_after(Sz p,s_cr v){return fr.insert_after(root,p,v);}
+		void erase_pos(Sz p){fr.erase_pos(root,p);}
+		void derive_from(persistent_wblt x){root=fr.derive(x.root);}
+		static persistent_wblt merge(persistent_wblt x,persistent_wblt y){return persistent_wblt(fr.merge(x.root,y.root));}
+		static S deref(int x){return fr.deref(x);}
+	};
+	template<
+		typename Compare,
+		typename S,typename T,typename SId,typename TId,typename IsTId,
+		typename SOpSS,typename SOpST,typename TOpTT,typename SizeType=int
+	>
+	class ordered_persistent_wblt
+	{
+	public:
+		using Fr=ordered_pwblt_forest<Compare,S,T,SId,TId,IsTId,SOpSS,SOpST,TOpTT,SizeType>;
+		using pwblt_forest_type=Fr;
+		inline static Fr fr;
+		using Sz=typename Fr::Sz;
+		using size_type=Sz;
+		using s_cr=typename Fr::s_cr;
+		using t_cr=typename Fr::t_cr;
+		int root;
+		ordered_persistent_wblt():root(){}
+		ordered_persistent_wblt(int _root):root(_root){}
+		explicit ordered_persistent_wblt(const typename Fr::M& m):root(){static_cast<typename Fr::M&>(fr)=m;}
+		ordered_persistent_wblt(int _root,const typename Fr::M& m):root(_root){static_cast<typename Fr::M&>(fr)=m;}
+		template<typename F>
+		void build(int n,F&& f){root=fr.build(n,f);}
+		template<typename RAIter>
+		void build(RAIter first,RAIter last){root=fr.build(first,last);}
+		pair<ordered_persistent_wblt,ordered_persistent_wblt> split(int k)
+		{
+			auto[x,y]=fr.split(root,k);
+			return {ordered_persistent_wblt(x),ordered_persistent_wblt(y)};
+		}
+		array<ordered_persistent_wblt,3> access(Sz l,Sz r)
+		{
+			auto[x,y,z]=fr.access(root,l,r);
+			return {ordered_persistent_wblt(x),ordered_persistent_wblt(y),ordered_persistent_wblt(z)};
+		}
+#ifndef SPONGE_PERSISTENT_WBLT_NTAG
+		void update(Sz l,Sz r,t_cr t){fr.update(root,l,r,t);}
+#endif
+		void set_pos(Sz p,s_cr v){fr.set_pos(root,p,v);}
+#ifndef SPONGE_PERSISTENT_WBLT_NREV
+		void reverse(Sz l,Sz r){fr.reverse(root,l,r);}
+#endif
+		S query(Sz p){return pos(p);}
+		S query(Sz l,Sz r){return fr.query(root,l,r);}
+		S pos(Sz p){return fr.pos(root,p);}
+		vector<S> range(Sz l,Sz r){return fr.range(root,l,r);}
+		vector<S> seq(){return fr.seq(root);}
+		int insert_after(Sz p,s_cr v){return fr.insert_after(root,p,v);}
+		void erase_pos(Sz p){fr.erase_pos(root,p);}
+		void derive_from(ordered_persistent_wblt x){root=fr.derive(x.root);}
+		static ordered_persistent_wblt merge(ordered_persistent_wblt x,ordered_persistent_wblt y){return ordered_persistent_wblt(fr.merge(x.root,y.root));}
+		static S deref(int x){return fr.deref(x);}
+		int find(s_cr v){return fr.find(root,v);}
+		int find_by_order(Sz k){return fr.find_by_order(root,k);}
+		Sz order_of_key(s_cr v){return fr.order_of_key(root,v);}
+		int lower_bound(s_cr v){return fr.lower_bound(root,v);}
+		int upper_bound(s_cr v){return fr.upper_bound(root,v);}
+		int predecessor(s_cr v){return fr.predecessor(root,v);}
+		int successor(s_cr v){return fr.successor(root,v);}
+		int insert(s_cr v){return fr.insert(root,v);}
+		bool erase(s_cr v){return fr.erase(root,v);}
+		pair<ordered_persistent_wblt,ordered_persistent_wblt> vsplit(s_cr k)
+		{
+			auto[x,y]=fr.vsplit(root,k);
+			return {ordered_persistent_wblt(x),ordered_persistent_wblt(y)};
+		}
+		array<ordered_persistent_wblt,3> vaccess(s_cr l,s_cr r)
+		{
+			auto[x,y,z]=fr.vaccess(root,l,r);
+			return {ordered_persistent_wblt(x),ordered_persistent_wblt(y),ordered_persistent_wblt(z)};
+		}
+#ifndef SPONGE_PERSISTENT_WBLT_NTAG
+		void vupdate(s_cr l,s_cr r,t_cr t){fr.vupdate(root,l,r,t);}
+#endif
+		S vquery(s_cr l,s_cr r){return fr.vquery(root,l,r);}
+		static ordered_persistent_wblt hmerge(ordered_persistent_wblt x,ordered_persistent_wblt y){return ordered_persistent_wblt(fr.hmerge(x.root,y.root));}
+ 	};
+	template<typename S,typename SId,typename SOpSS,typename SizeType=int>
+	using persistent_wblt_n=persistent_wblt<
+		S,null_t,SId,null_id,is_null_id,
+		SOpSS,ignore_tag<S,SizeType>,null_op,SizeType
+	>;
+	template<typename S,typename SId,typename SizeType=int>
+	using persistent_wblt_nn=persistent_wblt_n<S,SId,select_second<S>,SizeType>;
+	template<typename Compare,typename S,typename SId,typename SOpSS,typename SizeType=int>
+	using ordered_persistent_wblt_n=ordered_persistent_wblt<
+		Compare,
+		S,null_t,SId,null_id,is_null_id,
+		SOpSS,ignore_tag<S,SizeType>,null_op,SizeType
+	>;
+	template<typename Compare,typename S,typename SId,typename SizeType=int>
+	using ordered_persistent_wblt_nn=ordered_persistent_wblt_n<Compare,S,SId,select_second<S>,SizeType>;
+	template<typename S,typename SId,typename SOpSS,typename SizeType=int>
+	using pwblt_forest_n=typename persistent_wblt_n<S,SId,SOpSS,SizeType>::Fr;
+	template<typename S,typename SId,typename SizeType=int>
+	using pwblt_forest_nn=typename persistent_wblt_nn<S,SId,SizeType>::Fr;
+	template<typename Compare,typename S,typename SId,typename SOpSS,typename SizeType=int>
+	using ordered_pwblt_forest_n=typename ordered_persistent_wblt_n<Compare,S,SId,SOpSS,SizeType>::Fr;
+	template<typename Compare,typename S,typename SId,typename SizeType=int>
+	using ordered_pwblt_forest_nn=typename ordered_persistent_wblt_nn<Compare,S,SId,SizeType>::Fr;
 }
 #endif
