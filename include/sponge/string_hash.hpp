@@ -51,6 +51,7 @@ namespace sponge
 				res[i]=res[i-1];
 				res[i].append(s[i]);
 			}
+			return res;
 		}
 		static string_hash query(const vector<string_hash>& v,int l,int r)
 		{
